@@ -13,7 +13,8 @@
 - JSON everywhere, UTF-8, timestamps ISO 8601 with timezone (`2026-10-04T10:30:00+02:00`)
 - Coordinates: WGS84, `lat` / `lon` as floats
 - CORS: origins from `CORS_ORIGINS`
-- No endpoint logs user addresses or chat content
+- No endpoint logs user addresses or chat content; access logs drop query strings
+- `/docs` and `/openapi.json` are disabled with `APP_ENV=production`
 
 ## Common envelope for data readings
 
@@ -56,6 +57,7 @@ Endpoints aggregating several sources return a list of envelopes.
 }
 ```
 - Not found → `200` with `found: false`, other fields `null`
+- `q` 2–200 chars; more than `GEOCODE_RATE_LIMIT_PER_MINUTE` (default 30) requests per client IP → `429` (also `/reverse`). The agent sends `X-Internal-Token: <API_INTERNAL_TOKEN>` and is limited per user on `/chat` instead
 - Outside Kraków → `in_krakow: false`
 
 ### `GET /reverse?lat=&lon=`
@@ -222,17 +224,19 @@ Data for the map tab tiles — one request, all sources.
 Request:
 ```json
 {
-  "session_id": "uuid-from-frontend",
+  "session_id": "id-issued-by-the-agent",
   "message": "Czy grozi mi zalanie?",
   "location": { "lat": 50.0312, "lon": 19.9204, "accuracy_m": 25 }
 }
 ```
-- `location` optional (`null` when the user denied it); sent with every request, never stored in the session
+- `session_id` omitted on the first question; the agent issues a random id (`[A-Za-z0-9_-]{16,64}`) in the response and the frontend sends it back. An unknown or expired id gets a new one, so a client can never pick or guess another conversation
+- Unknown fields → `422`; `message` 1–2000 chars; `accuracy_m` 0–100000
+- `location` optional (`null` when the user denied it); sent with every request, never stored in the session. The model sees it rounded to ~100 m, tools get the exact point
 - A place named in `message` takes precedence over `location`
 Response:
 ```json
 {
-  "session_id": "uuid-from-frontend",
+  "session_id": "id-issued-by-the-agent",
   "answer": "markdown text in Polish",
   "sections": {
     "situation": "...",
@@ -251,6 +255,7 @@ Response:
 }
 ```
 - `sections` may be `null` (clarifying question, off-topic, out of area)
+- Too many questions from one client → `429 {"detail": "Za dużo pytań naraz. Spróbuj ponownie za chwilę."}` (`CHAT_RATE_LIMIT_PER_MINUTE`, default 10)
 - `emergency: true` → frontend shows the "Dzwoń 112" banner
 - LLM error / timeout → `503 {"error": "agent_unavailable", "message": "Agent chwilowo niedostępny"}`
 - Session context lives in agent memory only (TTL), never in `db` or logs

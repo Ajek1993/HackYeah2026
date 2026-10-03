@@ -32,7 +32,7 @@ make lint        # ruff + oxlint
 make down
 ```
 
-Fill in `GLM_API_KEY` and `AIRLY_API_KEY` in `.env`. The default `GLM_BASE_URL` targets the GLM Coding Plan endpoint; pay-as-you-go keys use `https://api.z.ai/api/paas/v4/`.
+Fill in `GLM_API_KEY` and `AIRLY_API_KEY` in `.env`, and set `API_INTERNAL_TOKEN` to a random string (shared by `api` and `agent`). On a server also set `APP_ENV=production` (hides the API docs). The default `GLM_BASE_URL` targets the GLM Coding Plan endpoint; pay-as-you-go keys use `https://api.z.ai/api/paas/v4/`.
 
 | Service | URL |
 |---------|-----|
