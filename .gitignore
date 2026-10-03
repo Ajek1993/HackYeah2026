@@ -42,3 +42,5 @@ celerybeat-schedule.db
 /docs
 /specs
 .claude
+# Edge nginx config of the shared VPS proxy (kept outside the repo)
+/deploy/kryzio.goveris.conf

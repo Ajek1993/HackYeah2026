@@ -77,10 +77,9 @@ The Demo tab is visible only with `VITE_DEMO_MODE=true` and is meant for present
 
 ## Deployment
 
-Production runs on a VPS with Docker Compose behind an nginx reverse proxy that terminates TLS. Templates:
+Production runs on a VPS with Docker Compose behind an nginx reverse proxy that terminates TLS. [`deploy/docker-compose.prod.yml`](deploy/docker-compose.prod.yml) has no published ports, no bind mounts or `--reload`, `restart: unless-stopped` and the static frontend from [`frontend/Dockerfile.prod`](frontend/Dockerfile.prod).
 
-- [`deploy/docker-compose.prod.yml`](deploy/docker-compose.prod.yml) — no published ports, no bind mounts or `--reload`, `restart: unless-stopped`, static frontend from [`frontend/Dockerfile.prod`](frontend/Dockerfile.prod).
-- [`deploy/kryzio.goveris.conf`](deploy/kryzio.goveris.conf) — the edge proxy: `/api/` and `/agent/` prefixes, HSTS, query-free access log, `X-Forwarded-For` overwritten with the client address.
+The proxy config lives on the server, outside the repo. It routes `/api/` and `/agent/` to the services with the prefix stripped, sets HSTS, logs paths without the query string and overwrites `X-Forwarded-For` with the client address.
 
 ```bash
 cp deploy/docker-compose.prod.yml docker-compose.prod.yml   # the root copy is ignored by git
