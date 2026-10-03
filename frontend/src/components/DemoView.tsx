@@ -15,10 +15,10 @@ const SCENARIOS = [
 export function DemoView() {
   return (
     <section className="flex flex-col gap-6">
-      <div role="status" className="rounded-xl bg-caution-soft p-4 text-caution">
+      <aside aria-label="Symulacja" className="rounded-xl bg-caution-soft p-4 text-caution">
         <p className="text-lg font-extrabold">Symulacja</p>
         <p>Dane w tej zakładce są zmyślone na potrzeby prezentacji. To nie jest prawdziwy alarm.</p>
-      </div>
+      </aside>
       <h1 className="text-[2rem] font-extrabold leading-tight tracking-tight">
         Wybierz scenariusz
       </h1>

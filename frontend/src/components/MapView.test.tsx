@@ -98,9 +98,9 @@ describe('MapView', () => {
     serve(baseRoutes)
     render(<MapView />)
 
-    const warningsTile = (await screen.findByRole('heading', { name: 'Ostrzeżenia' })).closest(
-      'li',
-    )!
+    // wait for the tiles; "Ostrzeżenia" is also a heading in the text list under the map
+    const warningsTile = (await screen.findByText('1 ostrzeżenie hydrologiczne')).closest('li')!
+    expect(within(warningsTile).getByRole('heading', { name: 'Ostrzeżenia' })).toBeInTheDocument()
     expect(within(warningsTile).getByText('Uwaga')).toBeInTheDocument()
     expect(within(warningsTile).getByText('1 ostrzeżenie hydrologiczne')).toBeInTheDocument()
 
@@ -218,6 +218,25 @@ describe('MapView', () => {
     expect(shelters).toBeChecked()
     await userEvent.click(shelters)
     expect(shelters).not.toBeChecked()
+  })
+})
+
+describe('Map text alternative', () => {
+  it('lists warnings and outages from the map as text', async () => {
+    serve({
+      ...baseRoutes,
+      '/warnings': envelope([
+        { id: 'w1', title: 'Susza hydrologiczna', area: 'zlewnia Rudawy', geometry: null },
+      ]),
+      '/power-outages': envelope([{ id: 'o1', planned: true, area: 'Kraków ul. Testowa 1-10' }]),
+    })
+    render(<MapView />)
+
+    const summary = await screen.findByText(/Lista zagrożeń z mapy \(2\)/)
+    await userEvent.click(summary)
+
+    expect(screen.getByText('Susza hydrologiczna')).toBeInTheDocument()
+    expect(screen.getByText(/Planowane wyłączenie: Kraków ul. Testowa 1-10/)).toBeInTheDocument()
   })
 })
 

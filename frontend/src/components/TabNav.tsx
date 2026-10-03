@@ -44,7 +44,7 @@ export function TabNav({ tabs, active, onChange }: Props) {
             role="tab"
             id={`tab-${tab.id}`}
             aria-selected={selected}
-            aria-controls={`panel-${tab.id}`}
+            aria-controls={selected ? `panel-${tab.id}` : undefined}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.id)}
             onKeyDown={(event) => handleKeyDown(event, index)}
