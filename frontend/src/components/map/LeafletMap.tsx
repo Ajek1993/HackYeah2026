@@ -5,6 +5,7 @@ import type { PowerOutage, Shelter, Warning } from '../../api/data'
 import { formatDistance } from '../../lib/distance'
 import { googleMapsDirectionsUrl, NAVIGATE_LABEL, NEW_TAB_HINT } from '../../lib/navigation'
 import { APPROXIMATE_NOTE, groupOutages, outageCount, outageTitle } from '../../lib/outages'
+import { WARNING_HATCH, WarningHatchDefs } from './warningHatch'
 
 export type LayerId = 'warnings' | 'power' | 'shelters'
 
@@ -91,7 +92,7 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
     for (const warning of warnings) {
       if (!warning.geometry) continue
       L.geoJSON(warning.geometry, {
-        style: { color: '#b42318', weight: 2, fillColor: '#b42318', fillOpacity: 0.18 },
+        style: { color: '#b42318', weight: 2, fillColor: WARNING_HATCH, fillOpacity: 1 },
       })
         .bindPopup(`<strong>${escape(warning.title)}</strong><br>${escape(warning.area)}`)
         .addTo(group)
@@ -182,11 +183,14 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
   // Leaflet panes use z-index 400-1000; `isolate` keeps them under the sticky
   // emergency bar and simulation banner
   return (
-    <div
-      ref={container}
-      role="region"
-      aria-label="Mapa Krakowa z zagrożeniami i schronami"
-      className="isolate h-[60vh] min-h-80 w-full overflow-hidden rounded-xl border border-line"
-    />
+    <>
+      <WarningHatchDefs />
+      <div
+        ref={container}
+        role="region"
+        aria-label="Mapa Krakowa z zagrożeniami i schronami"
+        className="isolate h-[60vh] min-h-80 w-full lg:h-[70vh] lg:min-h-[32rem] overflow-hidden rounded-xl border border-line"
+      />
+    </>
   )
 }

@@ -44,14 +44,14 @@ export function ChatView({ quickQuestions = QUICK_QUESTIONS }: Props) {
   }
 
   return (
-    <section className="flex flex-col gap-8">
+    <section className="mx-auto flex max-w-5xl flex-col gap-8">
       {!started && (
         <>
-          <div className="max-w-[34ch]">
-            <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight sm:text-[2.5rem]">
+          <div className="max-w-[34ch] lg:max-w-none">
+            <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight sm:text-[2.5rem] lg:text-[3.25rem]">
               Co chcesz wiedzieć o bezpieczeństwie w swojej okolicy?
             </h1>
-            <p className="mt-3 text-ink-muted">
+            <p className="mt-3 max-w-[60ch] text-ink-muted lg:text-lg">
               Zapytaj własnymi słowami i podaj ulicę albo osiedle. Powiem, co zrobić przed, w
               trakcie i po zdarzeniu.
             </p>
@@ -143,7 +143,7 @@ export function ChatView({ quickQuestions = QUICK_QUESTIONS }: Props) {
       </form>
 
       {!started && (
-        <p className="border-l-4 border-vistula pl-4 text-sm text-ink-muted">{DISCLAIMER}</p>
+        <p className="border-l-4 border-danger pl-4 text-sm font-semibold text-danger">{DISCLAIMER}</p>
       )}
     </section>
   )

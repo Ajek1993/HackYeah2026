@@ -10,7 +10,7 @@ export function EmergencyBar() {
       <ul
         id="other-numbers"
         hidden={!open}
-        className="mx-auto grid max-h-[40vh] max-w-3xl grid-cols-2 gap-2 overflow-y-auto px-4 pt-4 sm:grid-cols-3"
+        className="mx-auto grid max-h-[40vh] max-w-6xl grid-cols-2 gap-2 overflow-y-auto px-4 pt-4 sm:grid-cols-3"
       >
         {OTHER_EMERGENCY.map((item) => (
           <li key={item.number}>
@@ -24,7 +24,7 @@ export function EmergencyBar() {
           </li>
         ))}
       </ul>
-      <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
         <a
           href={`tel:${PRIMARY_EMERGENCY.number}`}
           className="flex min-h-14 min-w-0 flex-1 basis-56 items-center gap-3 rounded-lg bg-white px-4 text-civil-deep hover:bg-paper"

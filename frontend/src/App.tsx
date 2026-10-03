@@ -40,9 +40,11 @@ export default function App({ demoMode = config.demoMode }: Props) {
       </a>
       {demoMode && <SimulationBanner demo={demo} />}
       <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-4">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
           <Logo />
-          <TabNav tabs={tabs} active={active} onChange={setActive} />
+          <div className="lg:w-[28rem]">
+            <TabNav tabs={tabs} active={active} onChange={setActive} />
+          </div>
         </div>
       </header>
 
@@ -50,7 +52,7 @@ export default function App({ demoMode = config.demoMode }: Props) {
         ref={mainRef}
         id="main"
         tabIndex={-1}
-        className="mx-auto w-full max-w-3xl flex-1 px-4 py-8"
+        className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 lg:py-10"
       >
         <div id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`}>
           {active === 'chat' && <ChatView key={dataKey} quickQuestions={scenario?.questions} />}

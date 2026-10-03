@@ -18,7 +18,7 @@ const STATUS: Record<TileStatus, { label: string; tone: string; bar: string }> =
 
 export function SummaryTiles({ tiles }: { tiles: SummaryTile[] }) {
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
+    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {tiles.map((tile) => {
         const status = STATUS[tile.status] ?? STATUS.no_data
         const updated = formatUpdatedAt(tile.updated_at)

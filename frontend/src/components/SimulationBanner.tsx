@@ -10,7 +10,7 @@ export function SimulationBanner({ demo }: { demo: Demo }) {
 
   return (
     <aside aria-label="Symulacja" className="sticky top-0 z-30 bg-caution-soft text-ink">
-      <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
         <p className="min-w-0 flex-1 basis-64">
           <span className="mr-2 inline-block rounded bg-ink px-2 text-lg font-extrabold tracking-wide text-caution-soft">
             SYMULACJA
