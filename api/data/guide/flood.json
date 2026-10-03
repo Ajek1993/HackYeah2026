@@ -1,0 +1,67 @@
+{
+  "topic": "flood",
+  "title": "Powódź",
+  "pages": "28",
+  "before": [
+    "Przygotuj plecak ewakuacyjny.",
+    "Sprawdź, czy sąsiedzi potrzebują pomocy.",
+    "Zabezpiecz dom, przygotuj worki z piaskiem. Uszczelnij drzwi i okna.",
+    "Przenieś wartościowe rzeczy i urządzenia elektryczne na górne piętra budynku.",
+    "Wyłącz instalację elektryczną i gazową, zabezpiecz włazy i wyloty instalacji kanalizacyjnej.",
+    "Zaparkuj pojazdy w bezpiecznym miejscu, nie blokuj dróg.",
+    "Przygotuj zwierzęta do ewakuacji."
+  ],
+  "during": [
+    "Nie ignoruj alertów pogodowych i wezwań do ewakuacji.",
+    "Jeśli zostanie ogłoszona ewakuacja, nie zostawaj na zalanym terenie z powodu dobytku. Teren zabezpieczą służby.",
+    "Jeżeli ewakuacja nie jest możliwa, wywieś flagę w widocznym miejscu, aby ratownicy wiedzieli, czego potrzebujesz: biała flaga – muszę się ewakuować; czerwona flaga – potrzebuję pomocy medycznej; niebieska flaga – potrzebuję żywności i wody. Flaga może być zrobiona np. z ubrań."
+  ],
+  "after": [],
+  "notes": [
+    "Śledź informacje o stanach wód na stronach: wody.gov.pl, isok.gov.pl, hydro.imgw.pl."
+  ],
+  "emergency_numbers": [
+    {
+      "name": "Numer alarmowy",
+      "number": "112"
+    },
+    {
+      "name": "Pogotowie ratunkowe",
+      "number": "999"
+    },
+    {
+      "name": "Straż pożarna",
+      "number": "998"
+    },
+    {
+      "name": "Policja",
+      "number": "997"
+    },
+    {
+      "name": "Pogotowie wodno-kanalizacyjne",
+      "number": "994"
+    },
+    {
+      "name": "Pogotowie ciepłownicze",
+      "number": "993"
+    },
+    {
+      "name": "Pogotowie gazownicze",
+      "number": "992"
+    },
+    {
+      "name": "Pogotowie energetyczne",
+      "number": "991"
+    },
+    {
+      "name": "Wojewódzkie centrum zarządzania kryzysowego",
+      "number": "987"
+    },
+    {
+      "name": "Straż miejska",
+      "number": "986"
+    }
+  ],
+  "source_url": "https://www.gov.pl/attachment/9356d407-b74b-4219-8f2f-d80294b3bd16",
+  "publication": "Poradnik bezpieczeństwa, nr publikacji 1/2025, MON, MSWiA, RCB"
+}

@@ -1,0 +1,65 @@
+{
+  "topic": "power_outage",
+  "title": "Długotrwały brak prądu (blackout)",
+  "pages": "29",
+  "before": [
+    "Przygotuj alternatywne źródła: światła (latarki z zapasem baterii), ogrzewania (piecyk gazowy lub olejowy, kominek), łączności (radio na baterie, krótkofalówki, CB radio).",
+    "Rozważ zakup agregatu prądotwórczego.",
+    "Naładuj powerbanki. Włącz w telefonie tryb oszczędzania energii.",
+    "Przygotuj zapasy żywności gotowej do spożycia (np. konserwy, suchary, batony) i wody (min. 3 litry dziennie na osobę).",
+    "Miej przy sobie zapas gotówki w różnych nominałach."
+  ],
+  "during": [
+    "Oszczędzaj ciepło, zbierz domowników w jednym pokoju.",
+    "Ogranicz otwieranie lodówki i zamrażarki – dłużej utrzymają niską temperaturę.",
+    "Odłącz wszystkie urządzenia elektryczne od zasilania."
+  ],
+  "after": [],
+  "notes": [
+    "Brak prądu – spowodowany katastrofą naturalną lub celowym działaniem – może potrwać nawet kilka dni. Stracisz wówczas dostęp do wody, ogrzewania, internetu i telefonu oraz możliwość płacenia kartą."
+  ],
+  "emergency_numbers": [
+    {
+      "name": "Numer alarmowy",
+      "number": "112"
+    },
+    {
+      "name": "Pogotowie ratunkowe",
+      "number": "999"
+    },
+    {
+      "name": "Straż pożarna",
+      "number": "998"
+    },
+    {
+      "name": "Policja",
+      "number": "997"
+    },
+    {
+      "name": "Pogotowie wodno-kanalizacyjne",
+      "number": "994"
+    },
+    {
+      "name": "Pogotowie ciepłownicze",
+      "number": "993"
+    },
+    {
+      "name": "Pogotowie gazownicze",
+      "number": "992"
+    },
+    {
+      "name": "Pogotowie energetyczne",
+      "number": "991"
+    },
+    {
+      "name": "Wojewódzkie centrum zarządzania kryzysowego",
+      "number": "987"
+    },
+    {
+      "name": "Straż miejska",
+      "number": "986"
+    }
+  ],
+  "source_url": "https://www.gov.pl/attachment/9356d407-b74b-4219-8f2f-d80294b3bd16",
+  "publication": "Poradnik bezpieczeństwa, nr publikacji 1/2025, MON, MSWiA, RCB"
+}

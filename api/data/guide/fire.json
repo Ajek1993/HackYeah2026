@@ -1,0 +1,64 @@
+{
+  "topic": "fire",
+  "title": "Pożar",
+  "pages": "26–27",
+  "before": [
+    "Zwróć uwagę na oznaczenia na gaśnicy – do jakich pożarów jest przeznaczona."
+  ],
+  "during": [
+    "Gdy zauważysz pożar lub dym, wezwij straż pożarną. Zadzwoń pod numer alarmowy 112.",
+    "Próbuj ugasić ogień, jeśli jest nieduży.",
+    "O ile to bezpieczne, zakręć główny zawór gazu i wyłącz główne wyłączniki prądu.",
+    "Nie otwieraj okien ani drzwi. Ograniczenie dostępu powietrza spowolni rozprzestrzenianie się ognia.",
+    "Chroń drogi oddechowe. Osłaniaj usta i nos, najlepiej mokrym materiałem.",
+    "Poinformuj służby ratownicze, jeśli ktoś został w budynku i podaj dokładną lokalizację.",
+    "W czasie pożaru nie używaj windy! Korzystaj ze schodów.",
+    "Pamiętaj: nie gaś wodą urządzeń elektrycznych, palących się olejów ani tłuszczu. Płonący olej na patelni przykryj szczelnie pokrywką, kocem lub mokrą ścierką."
+  ],
+  "after": [],
+  "notes": [],
+  "emergency_numbers": [
+    {
+      "name": "Numer alarmowy",
+      "number": "112"
+    },
+    {
+      "name": "Pogotowie ratunkowe",
+      "number": "999"
+    },
+    {
+      "name": "Straż pożarna",
+      "number": "998"
+    },
+    {
+      "name": "Policja",
+      "number": "997"
+    },
+    {
+      "name": "Pogotowie wodno-kanalizacyjne",
+      "number": "994"
+    },
+    {
+      "name": "Pogotowie ciepłownicze",
+      "number": "993"
+    },
+    {
+      "name": "Pogotowie gazownicze",
+      "number": "992"
+    },
+    {
+      "name": "Pogotowie energetyczne",
+      "number": "991"
+    },
+    {
+      "name": "Wojewódzkie centrum zarządzania kryzysowego",
+      "number": "987"
+    },
+    {
+      "name": "Straż miejska",
+      "number": "986"
+    }
+  ],
+  "source_url": "https://www.gov.pl/attachment/9356d407-b74b-4219-8f2f-d80294b3bd16",
+  "publication": "Poradnik bezpieczeństwa, nr publikacji 1/2025, MON, MSWiA, RCB"
+}

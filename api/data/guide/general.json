@@ -1,0 +1,77 @@
+{
+  "topic": "general",
+  "title": "Dekalog bezpieczeństwa i ewakuacja",
+  "pages": "20–23, okładka",
+  "before": [
+    "Korzystaj z wiarygodnych źródeł informacji, przede wszystkim rządowych.",
+    "Opracuj i przećwicz rodzinny plan kryzysowy na wypadek różnych zagrożeń, konieczności ewakuacji i ewentualnego rozdzielenia.",
+    "Przygotuj domowe zapasy na minimum 3 dni i regularnie je przeglądaj.",
+    "Skompletuj apteczkę z lekami. Naucz się udzielać pierwszej pomocy.",
+    "Regularnie rób lub zlecaj przeglądy instalacji: elektrycznej, gazowej, wentylacyjnej i kominowej.",
+    "Dla dzieci i seniorów przygotuj identyfikatory z imieniem, nazwiskiem i telefonem kontaktowym.",
+    "Jeżeli masz zwierzęta, zaczipuj je lub oznakuj.",
+    "Sprawdź, gdzie jest najbliższe miejsce schronienia.",
+    "Skompletuj plecak ewakuacyjny: woda butelkowana, apteczka i leki osobiste, dokumenty i gotówka, latarka i radio na baterie, naładowany telefon i powerbank, ubranie dopasowane do pory roku, żywność wysokoodżywcza gotowa do spożycia. Plecak ewakuacyjny powinien mieć każdy domownik, nawet dzieci.",
+    "Słuchaj poleceń służb i współdziałaj z innymi."
+  ],
+  "during": [
+    "Jeśli przebywasz w miejscu, w którym pojawiło się bezpośrednie zagrożenie dla Twojego życia lub zdrowia, nie zwlekaj z ewakuacją. Jeżeli władze lub służby ratownicze zdecydują o ewakuacji, bezwzględnie zastosuj się do poleceń.",
+    "Przy ewakuacji: zamknij okna, dopływ wody, wyłącz urządzenia elektryczne i gazowe, wygaś wszystkie źródła ognia (piec, kominek, kuchenka).",
+    "Ubierz się stosownie do warunków pogodowych. Zabierz plecak ewakuacyjny.",
+    "Upewnij się, że dzieci mają przy sobie dane kontaktowe opiekuna oraz informacje medyczne.",
+    "Sprawdź, czy sąsiedzi wiedzą o alarmie. W miarę możliwości pomóż osobom ze szczególnymi potrzebami.",
+    "Skorzystaj ze zorganizowanego transportu lub idź pieszo do wyznaczonego miejsca. Jeśli używasz samochodu, nie blokuj dróg ewakuacyjnych.",
+    "Pamiętaj o zwierzętach, a jeśli ich ewakuacja nie jest możliwa, zabezpiecz je i zapewnij im jedzenie i wodę.",
+    "Powiadom bliskich, że się ewakuujesz, w jaki sposób i dokąd."
+  ],
+  "after": [],
+  "notes": [
+    "Jak wezwać pomoc: dzwoń z bezpiecznego miejsca, mów spokojnie i wyraźnie; podaj dokładny adres (jeśli go nie znasz, opisz charakterystyczne elementy krajobrazu); wyjaśnij, co się stało i czy zagrożone jest życie, zdrowie lub mienie; poczekaj, aż operator potwierdzi przyjęcie zgłoszenia – nie rozłączaj się pierwszy.",
+    "Jeśli nie możesz zadzwonić, wezwij pomoc, korzystając z aplikacji Alarm112.",
+    "Informacje o zagrożeniach: Alerty RCB, aplikacja Regionalny System Ostrzegania (RSO), radio i telewizja."
+  ],
+  "emergency_numbers": [
+    {
+      "name": "Numer alarmowy",
+      "number": "112"
+    },
+    {
+      "name": "Pogotowie ratunkowe",
+      "number": "999"
+    },
+    {
+      "name": "Straż pożarna",
+      "number": "998"
+    },
+    {
+      "name": "Policja",
+      "number": "997"
+    },
+    {
+      "name": "Pogotowie wodno-kanalizacyjne",
+      "number": "994"
+    },
+    {
+      "name": "Pogotowie ciepłownicze",
+      "number": "993"
+    },
+    {
+      "name": "Pogotowie gazownicze",
+      "number": "992"
+    },
+    {
+      "name": "Pogotowie energetyczne",
+      "number": "991"
+    },
+    {
+      "name": "Wojewódzkie centrum zarządzania kryzysowego",
+      "number": "987"
+    },
+    {
+      "name": "Straż miejska",
+      "number": "986"
+    }
+  ],
+  "source_url": "https://www.gov.pl/attachment/9356d407-b74b-4219-8f2f-d80294b3bd16",
+  "publication": "Poradnik bezpieczeństwa, nr publikacji 1/2025, MON, MSWiA, RCB"
+}
