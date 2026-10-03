@@ -77,17 +77,32 @@ def _assistant_message(message: Any) -> dict[str, Any]:
     }
 
 
+RESPONSE_KEYS = {"answer", "sections", "emergency", "out_of_area", "off_topic"}
+
+
 def _parse_final(content: str | None) -> dict[str, Any]:
-    """Extract the JSON object the prompt asks for; fall back to plain text."""
+    """Extract the JSON object the prompt asks for; fall back to plain text.
+
+    The model sometimes writes the answer as prose and appends a JSON object
+    without `answer` — then the prose becomes the answer and the JSON keeps
+    supplying sections and flags, so raw JSON never reaches the user.
+    """
     text = (content or "").strip()
-    start, end = text.find("{"), text.rfind("}")
-    if start != -1 and end > start:
+    decoder = json.JSONDecoder()
+    index = text.find("{")
+    while index != -1:
         try:
-            parsed = json.loads(text[start : end + 1])
+            parsed, _ = decoder.raw_decode(text, index)
         except json.JSONDecodeError:
             parsed = None
-        if isinstance(parsed, dict) and isinstance(parsed.get("answer"), str):
-            return parsed
+        if isinstance(parsed, dict) and RESPONSE_KEYS & parsed.keys():
+            if isinstance(parsed.get("answer"), str):
+                return parsed
+            prose = text[:index].strip().removesuffix("```json").removesuffix("```").strip()
+            sections = parsed.get("sections")
+            situation = sections.get("situation") if isinstance(sections, dict) else None
+            return {**parsed, "answer": prose or (situation if isinstance(situation, str) else "")}
+        index = text.find("{", index + 1)
     return {"answer": text}
 
 

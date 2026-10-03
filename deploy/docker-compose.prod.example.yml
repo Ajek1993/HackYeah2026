@@ -1,0 +1,105 @@
+# Production stack on the VPS (copy to /mnt/HackYeah2026/docker-compose.prod.yml).
+# Differences from docker-compose.yml: no published ports (only the edge nginx reaches the
+# services over app-network), no bind mounts or --reload, static frontend build, restart policy.
+#
+#   sudo docker-compose -f docker-compose.prod.yml up -d --build
+
+x-api-base: &api-base
+  build: ./api
+  env_file: .env
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - kryzio-internal
+
+services:
+  db:
+    build: ./db
+    # Unique name: a plain "db" collides with another postgres on app-network
+    container_name: kryzio-db
+    hostname: kryzio-db
+    env_file: .env
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - kryzio-internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - kryzio-internal
+
+  api:
+    <<: *api-base
+    container_name: kryzio-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      # Trust X-Forwarded-For from the edge nginx, otherwise every user shares one rate limit
+      FORWARDED_ALLOW_IPS: "*"
+    networks:
+      - kryzio-internal
+      - app-network
+
+  # Fetches every source once on start, then on the beat schedule
+  celery-worker:
+    <<: *api-base
+    command: celery -A app.celery_app worker -l info -c 2
+
+  celery-beat:
+    <<: *api-base
+    command: celery -A app.celery_app beat -l info -s /tmp/celerybeat-schedule
+
+  agent:
+    build: ./agent
+    container_name: kryzio-agent
+    env_file: .env
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001
+    environment:
+      FORWARDED_ALLOW_IPS: "*"
+    depends_on:
+      - api
+    networks:
+      - kryzio-internal
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      # Read from .env next to this file; they end up in the public bundle
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_AGENT_URL: ${VITE_AGENT_URL}
+        VITE_DEMO_MODE: ${VITE_DEMO_MODE:-false}
+        VITE_DEMO_TOKEN: ${VITE_DEMO_TOKEN:-}
+    container_name: kryzio-frontend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+
+networks:
+  kryzio-internal:
+  app-network:
+    external: true
+    name: app-network

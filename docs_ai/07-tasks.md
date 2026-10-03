@@ -108,12 +108,12 @@
 
 ## Faza 4 — Demo
 
-### T21 — Scenariusze symulowane w `api` · `review` · [B → zrobione przez Claude na prośbę autora]
+### T21 — Scenariusze symulowane w `api` · `done` · [B → zrobione przez Claude na prośbę autora]
 - `api/app/demo/`: powódź, brak prądu, atak bombowy; aktywny scenariusz podmienia odpowiedzi endpointów (`is_simulated=true`); endpointy demo → 404 gdy `DEMO_MODE=false`
 - X5: przełączanie wymaga `X-Demo-Token` (`DEMO_ADMIN_TOKEN`), scenariusz wygasa po `DEMO_TTL_MINUTES`; schrony i poradnik zostają prawdziwe
 - **Gotowe gdy:** testy: aktywacja scenariusza zmienia `/warnings`; przy fladze false → 404
 
-### T22 — Zakładka Demo we froncie · `review` · [A]
+### T22 — Zakładka Demo we froncie · `done` · [A]
 - Wybór scenariusza, stały baner SYMULACJA, czat i mapa na danych symulowanych, przełączenie resetuje czat
 - Baner na każdej zakładce (taśma ostrzegawcza, godzina wygaśnięcia, „Zakończ symulację”); pytania podpowiedzi per scenariusz; `VITE_DEMO_TOKEN` = `DEMO_ADMIN_TOKEN`
 - Agent: zawsze pobiera ostrzeżenia przy odpowiedzi o miejsce (inaczej pomijał symulowany alarm, gdy użytkownik sam pisał „ogłoszono alarm”)
@@ -121,7 +121,7 @@
 
 ## Faza 5 — Wdrożenie i wykończenie
 
-### T23 — Deploy backendu na VPS · `todo` · [B]
+### T23 — Deploy backendu na VPS · `done` · [B]
 - Decyzja autora: rezygnujemy z Vercela, całość (frontend, api, agent, db) na VPS
 - docker-compose na VPS, reverse proxy z HTTPS, CORS na domenę aplikacji
 - Z audytu bezpieczeństwa (infrastruktura, odłożone przez autora):
@@ -131,15 +131,15 @@
   - D4: osobne pliki env na usługę, hasła przez `secrets:`, `statement_timeout` i `idle_in_transaction_session_timeout`
   - X2: testy poza entrypointem, obraz bez zależności dev; X3: lockfile z hashami i `pip-audit`
   - Na serwerze: `APP_ENV=production`, losowy `API_INTERNAL_TOKEN`, losowe hasło Postgresa, `DEMO_MODE=true` z losowym `DEMO_ADMIN_TOKEN` (instancja prezentacyjna)
-- **Gotowe gdy:** `https://<domena>/health` → 200 z przeglądarki
+- **Gotowe gdy:** `https://kryzio.goveris.pl/health` → 200 z przeglądarki
 
-### T24 — Deploy frontendu na VPS · `todo` · [A]
+### T24 — Deploy frontendu na VPS · `done` · [A]
 - Zamiast Vercela: statyczny build (`npm run build`) serwowany przez reverse proxy z T23, bez serwera deweloperskiego Vite
 - Zmienne `VITE_*` wskazują publiczne adresy `api` i `agent` na VPS (wbudowywane przy buildzie); wersja prezentacyjna z `VITE_DEMO_MODE=true` i `VITE_DEMO_TOKEN`
 - Z audytu (F4, N2): nagłówki w proxy (`frame-ancestors 'none'`, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy: geolocation=(self)`); CSP z `<meta>` (build) już jest
 - **Gotowe gdy:** publiczny link działa end-to-end (czat, mapa, demo)
 
-### T25 — README końcowe · `todo` · [A]
+### T25 — README końcowe · `done` · [A]
 - Uruchomienie, architektura, źródła danych z licencjami, ujawnienie AI/API/danych, zespół
 - **Gotowe gdy:** nowa osoba uruchamia projekt z README przez `make up`
 
@@ -149,11 +149,11 @@
 
 ## Faza 6 — Zgłoszenie (równolegle od fazy 1)
 
-### T27 — Prezentacja PDF ≤ 10 slajdów · `todo` · [P]
+### T27 — Prezentacja PDF ≤ 10 slajdów · `done` · [P]
 - Problem, persona Marta, rozwiązanie, demo (zrzuty scenariuszy), architektura, źródła, KryzIO jako uzupełnienie RCB, dalszy rozwój (push, EN, głos)
 - **Gotowe gdy:** PDF ≤ 10 slajdów gotowy
 
-### T28 — Materiały zgłoszeniowe · `todo` · [P]
+### T28 — Materiały zgłoszeniowe · `done` · [P]
 - Tytuł, nazwa zespołu, skład, opis projektu, link do repo i demo, zrzuty ekranu
 - **Gotowe gdy:** wszystko wgrane na platformę przed 4.10, 23:00
 
@@ -231,3 +231,8 @@
 - Przy `emergency` z załadowanym poradnikiem model po zaostrzeniu promptu trzyma się poradnika, ale nadal potrafi dodać pojedyncze doprecyzowanie (np. „nie schodź do piwnicy, jeśli woda dotyka gniazdek”) — twarde wymuszenie wymagałoby składania odpowiedzi z kroków poradnika w kodzie
 - T16: czas odpowiedzi — każda runda GLM 4–9 s; przy działającym `api` typowo 3 rundy (geocode → dane równolegle → odpowiedź) ≈ 15 s; dalsze opcje: usunąć dublowanie `answer` + `sections` w JSON (mniej tokenów) albo streaming odpowiedzi
 
+### Po wdrożeniu (branch `prod-frontend-build`)
+- Front na produkcji szedł przez serwer deweloperski Vite i bez nagłówków bezpieczeństwa: `frontend/Dockerfile.prod` (build + `nginx-unprivileged`, port 8080) z nagłówkami w `frontend/nginx/`
+- `api` i `agent` za proxy widziały IP nginx, więc limit czatu był wspólny dla wszystkich: `FORWARDED_ALLOW_IPS` + proxy nadpisuje `X-Forwarded-For` adresem klienta
+- Po redeployu z czystą bazą kafelki pokazywały „Brak danych” do ręcznego seeda: worker Celery pobiera wszystkie źródła przy starcie
+- Wzorce dla VPS w `deploy/` (compose bez bind mountów i `--reload`, `restart`; config nginx z HSTS i logiem bez query stringa)
