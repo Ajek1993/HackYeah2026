@@ -215,7 +215,7 @@ class TestFlattenAreaDescriptions:
 class TestFetchImgwHydro:
     def _mock_db(self, mock_conn):
         mock_cur = MagicMock()
-        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00"}
+        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00", "n": 0}
         mock_cur.rowcount = 0
         mock_conn_obj = MagicMock()
         mock_conn_obj.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)
@@ -332,11 +332,12 @@ class TestFetchImgwHydro:
         mock_resp.raise_for_status = MagicMock()
         mock_get.return_value = mock_resp
 
-        mock_cur, _ = self._mock_db(mock_conn)
+        self._mock_db(mock_conn)
 
         result = fetch_imgw_hydro.apply().get(timeout=10)
-        assert result["status"] == "ok"
-        assert result["upserted"] == 0
+        # An empty list is a feed failure: cached stations must stay active
+        assert result["status"] == "empty"
+        mock_conn.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +348,7 @@ class TestFetchImgwHydro:
 class TestFetchImgwWarnings:
     def _mock_db(self, mock_conn):
         mock_cur = MagicMock()
-        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00"}
+        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00", "n": 0}
         mock_cur.rowcount = 0
         mock_conn_obj = MagicMock()
         mock_conn_obj.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)

@@ -1,12 +1,33 @@
+import hmac
+from functools import lru_cache
 from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
+from app.config import settings
 from app.nominatim import Nominatim, district, is_krakow_address, short_name
+from app.ratelimit import RateLimiter
 from app.repo import Repo, get_repo
 
-router = APIRouter()
+
+@lru_cache
+def get_geocode_limiter() -> RateLimiter:
+    return RateLimiter(settings.geocode_rate_limit_per_minute)
+
+
+def enforce_geocode_limit(
+    request: Request, limiter: Annotated[RateLimiter, Depends(get_geocode_limiter)]
+) -> None:
+    token = request.headers.get("X-Internal-Token", "")
+    if settings.internal_token and hmac.compare_digest(token, settings.internal_token):
+        return  # the agent is limited per user on its own /chat endpoint
+    client = request.client.host if request.client else "unknown"
+    if not limiter.allow(client):
+        raise HTTPException(429, "Za dużo wyszukiwań. Spróbuj ponownie za chwilę.")
+
+
+router = APIRouter(dependencies=[Depends(enforce_geocode_limit)])
 
 RepoDep = Annotated[Repo, Depends(get_repo)]
 

@@ -8,6 +8,7 @@ import requests
 from app.celery_app import app
 from app.config import settings
 from app.db import get_conn
+from app.sources.guards import safe_to_deactivate
 
 logger = logging.getLogger(__name__)
 
@@ -99,11 +100,14 @@ def fetch_shelters(self):
                         {**r, "run_ts": run_ts},
                     )
 
-                cur.execute(
-                    "UPDATE shelters SET is_active = false WHERE last_seen_at < %s AND is_active",
-                    (run_ts,),
-                )
-                deactivated = cur.rowcount
+                deactivated = 0
+                if safe_to_deactivate(cur, "shelters", len(rows)):
+                    cur.execute(
+                        "UPDATE shelters SET is_active = false"
+                        " WHERE last_seen_at < %s AND is_active",
+                        (run_ts,),
+                    )
+                    deactivated = cur.rowcount
 
         logger.info("Shelters: upserted %d, deactivated %d", len(rows), deactivated)
         return {"status": "ok", "upserted": len(rows), "deactivated": deactivated}

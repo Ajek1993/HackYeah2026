@@ -150,7 +150,7 @@ class TestFetchSheltersTask:
         mock_get.return_value = mock_resp
 
         mock_cur = MagicMock()
-        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00"}
+        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00", "n": 0}
         mock_cur.rowcount = 0
         mock_conn_obj = MagicMock()
         mock_conn_obj.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)
@@ -164,7 +164,8 @@ class TestFetchSheltersTask:
         assert result["status"] == "ok"
         assert result["upserted"] == 2
         assert result["deactivated"] == 0
-        assert mock_cur.execute.call_count == 4  # SELECT now() + 2 upserts + 1 deactivate
+        # SELECT now() + 2 upserts + active count + deactivate
+        assert mock_cur.execute.call_count == 5
 
     @patch("app.sources.shelters.get_conn")
     @patch("app.sources.shelters.requests.get")
@@ -207,7 +208,7 @@ class TestFetchSheltersTask:
         mock_get.return_value = mock_resp
 
         mock_cur = MagicMock()
-        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00"}
+        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00", "n": 0}
         mock_cur.rowcount = 5
         mock_conn_obj = MagicMock()
         mock_conn_obj.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)
@@ -228,7 +229,7 @@ class TestFetchSheltersTask:
         mock_get.return_value = mock_resp
 
         mock_cur = MagicMock()
-        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00"}
+        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00", "n": 0}
         mock_cur.rowcount = 0
         mock_conn_obj = MagicMock()
         mock_conn_obj.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)

@@ -23,7 +23,15 @@ async def lifespan(app: FastAPI):
         await app.state.pool.close()
 
 
-app = FastAPI(title="KryzIO API", lifespan=lifespan)
+# API docs only outside production (audit A4)
+_docs = settings.app_env != "production"
+app = FastAPI(
+    title="KryzIO API",
+    lifespan=lifespan,
+    docs_url="/docs" if _docs else None,
+    redoc_url="/redoc" if _docs else None,
+    openapi_url="/openapi.json" if _docs else None,
+)
 
 app.add_middleware(
     CORSMiddleware,
