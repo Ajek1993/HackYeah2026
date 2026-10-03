@@ -142,6 +142,14 @@ describe('MapView', () => {
     expect(await screen.findByText('Schron przy Testowej')).toBeInTheDocument()
     expect(screen.getByText('1,2 km od podanego adresu')).toBeInTheDocument()
     expect(screen.getByTestId('map')).toHaveTextContent('Testowa 1, Kraków|Schron przy Testowej')
+
+    const link = screen.getByRole('link', { name: /Nawiguj w Google Maps/ })
+    expect(link).toHaveAccessibleName(/otwiera się w nowej karcie/)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    const url = new URL(link.getAttribute('href')!)
+    expect(url.searchParams.get('origin')).toBe('50.031,19.921')
+    expect(url.searchParams.get('destination')).toBe('50.03,19.92')
   })
 
   it('refuses addresses outside Kraków with the fixed message', async () => {

@@ -3,6 +3,7 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef } from 'react'
 import type { PowerOutage, Shelter, Warning } from '../../api/data'
 import { formatDistance } from '../../lib/distance'
+import { googleMapsDirectionsUrl, NAVIGATE_LABEL, NEW_TAB_HINT } from '../../lib/navigation'
 import { APPROXIMATE_NOTE, groupOutages, outageCount, outageTitle } from '../../lib/outages'
 
 export type LayerId = 'warnings' | 'power' | 'shelters'
@@ -40,6 +41,12 @@ function escape(text: string): string {
   const div = document.createElement('div')
   div.textContent = text
   return div.innerHTML
+}
+
+// Popup link to walking directions; starts from the searched address when there is one
+function navigateLink(shelter: Shelter, origin: MapPoint | null): string {
+  const href = escape(googleMapsDirectionsUrl(shelter, origin))
+  return `<p style="margin:8px 0 0"><a href="${href}" target="_blank" rel="noopener noreferrer" class="kryzio-navigate">${NAVIGATE_LABEL}<span class="sr-only"> ${NEW_TAB_HINT}</span></a></p>`
 }
 
 export function LeafletMap({ warnings, outages, shelters, visible, address, nearest }: Props) {
@@ -130,10 +137,12 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
     for (const shelter of shelters) {
       if (shelter.id === nearest?.id) continue
       L.marker([shelter.lat, shelter.lon], { icon: shelterIcon(false), title: shelter.name })
-        .bindPopup(`<strong>${escape(shelter.name)}</strong><br>${escape(shelter.address)}`)
+        .bindPopup(
+          `<strong>${escape(shelter.name)}</strong><br>${escape(shelter.address)}${navigateLink(shelter, address)}`,
+        )
         .addTo(group)
     }
-  }, [shelters, nearest])
+  }, [shelters, nearest, address])
 
   useEffect(() => {
     const instance = map.current
@@ -163,7 +172,7 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
       const distance = nearest.distance_m != null ? `, ${formatDistance(nearest.distance_m)}` : ''
       L.marker(shelterPoint, { icon: shelterIcon(true), title: nearest.name, zIndexOffset: 900 })
         .bindPopup(
-          `<strong>${escape(nearest.name)}</strong>${distance}<br>${escape(nearest.address)}`,
+          `<strong>${escape(nearest.name)}</strong>${distance}<br>${escape(nearest.address)}${navigateLink(nearest, address)}`,
         )
         .addTo(pins)
     }

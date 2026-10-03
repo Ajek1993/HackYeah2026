@@ -51,6 +51,22 @@
 }
 
 @layer components {
+  /* Leaflet popups are plain HTML: the directions link gets the app's button style */
+  .kryzio-navigate {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    border-radius: 0.5rem;
+    background: var(--color-vistula);
+    padding: 0 1rem;
+    font-weight: 600;
+    color: #fff !important;
+    text-decoration: none;
+  }
+  .kryzio-navigate:hover {
+    background: var(--color-vistula-deep);
+  }
+
   /* Barrier tape of a civil defence drill: marks simulated data */
   .hazard-tape {
     background: repeating-linear-gradient(
