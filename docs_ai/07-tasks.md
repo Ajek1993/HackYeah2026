@@ -99,6 +99,13 @@
 - Kafelki z `/summary`, mapa Leaflet + OSM, warstwy zagrożeń i schronów, wyszukiwanie adresu → marker + najbliższy schron z odległością
 - **Gotowe gdy:** po wpisaniu adresu na mapie widać marker i najbliższy schron; nieaktualne kafelki oznaczone
 
+### T29 — Lokalizacja urządzenia · `review` · [A] (+ [B]: `GET /reverse`)
+- Uwaga autora: gdy w pytaniu nie ma adresu, aplikacja korzysta z lokalizacji użytkownika
+- Front pyta o zgodę przy pierwszym pytaniu; `location` w `POST /chat`; przycisk „Użyj mojej lokalizacji” w Mapie
+- Agent: narzędzie `reverse_geocode`, notatka systemowa z lokalizacją (nie w sesji), reguła zasięgu jak dla adresu
+- `api`: `GET /reverse?lat&lon` (Nominatim reverse, kształt jak `/geocode`) — do zrobienia przez backend
+- **Gotowe gdy:** pytanie bez adresu przy udzielonej zgodzie zwraca odpowiedź dla okolicy użytkownika; odmowa nie blokuje czatu
+
 ## Faza 4 — Demo
 
 ### T21 — Scenariusze symulowane w `api` · `todo` · [B]
@@ -169,6 +176,7 @@
 - Hot reload frontendu w Dockerze na Windows nie działał (bind mount nie przekazuje zdarzeń plików) — `VITE_USE_POLLING=true` w `docker-compose.yml` + `server.watch.usePolling` w `vite.config.ts`
 - T19: szybkie pytania wysyłane jednym kliknięciem; `EmergencyBanner` („Dzwoń 112”, `tel:112`, `role="alert"`) nad odpowiedzią przy `emergency: true` lub słowach kluczowych (`src/lib/emergency.ts`, bez polskich znaków i wielkości liter) — widoczny od razu po wysłaniu, także w trakcie czekania i przy 503; słowa kluczowe opisują sytuację „tu i teraz”, pytania o przygotowanie („jak się przygotować na pożar?”) banera nie włączają
 - T20: `src/api/data.ts` (klient `api` wg kontraktu), `MapView` — kafelki z `/summary` (status słownie, nie tylko kolorem; „dane sprzed X godz.”; „Dane symulowane”), wyszukiwanie adresu (`/geocode` → poza Krakowem stały komunikat, nie znaleziono → prośba o doprecyzowanie) → `/shelters/nearest?limit=1` → karta schronu z odległością; `LeafletMap` (Leaflet 1.9.4 + kafelki OSM, bez `react-leaflet`): warstwy ostrzeżeń (GeoJSON), wyłączeń prądu i schronów z przełącznikami, schron jako znak obrony cywilnej, przerywana linia adres → najbliższy schron; vitest 41/41 (Leaflet zamockowany w testach), oxlint OK, build OK; brak zrzutów ekranu (rozszerzenie Chrome niepołączone); bez endpointów `api` mapa pokazuje „Brak danych”
+- T29: decyzje autora — zgoda na lokalizację przy pierwszym pytaniu, zasięg przez nowy `GET /reverse` w `api`; kontrakt zaktualizowany (`/reverse`, pole `location`); agent: `reverse_geocode`, `build_location_note` (nazwane miejsce ma pierwszeństwo — na żywym GLM sprawdzone dla pytania bez adresu i z „Rynkiem Głównym”); front: `src/lib/geolocation.ts`, `useChat` (lokalizacja raz na stronę, tylko w pamięci), podpowiedź pod polem pytania, „Czekam na zgodę na lokalizację”, przycisk w Mapie; pytest agent 80/80, vitest 48/48, oxlint + build OK
 
 ### Odstępstwa
 - Lint frontendu: `oxlint` (domyślny w szablonie Vite) zamiast `eslint`
@@ -180,7 +188,8 @@
 
 ### Do decyzji autora
 - Treść nowego stałego komunikatu `EMERGENCY_NO_GUIDE_MESSAGE` do akceptacji
-- Prywatność (do backendu): `GET /geocode?q=<adres>` — access log uvicorna zapisuje query string, czyli adres użytkownika (SPEC: Never); wyłączyć access log w `api` (`--no-access-log`) albo zmienić na `POST` (zmiana kontraktu)
+- Backend: zaimplementować `GET /reverse` (T29)
+- Prywatność (do backendu): `GET /geocode?q=<adres>` i `GET /reverse?lat&lon` — access log uvicorna zapisuje query string, czyli adres użytkownika (SPEC: Never); wyłączyć access log w `api` (`--no-access-log`) albo zmienić na `POST` (zmiana kontraktu)
 - T20: nowa zależność `leaflet` + `@types/leaflet` (Leaflet był w ustalonym stacku architektury)
 - T16: czas odpowiedzi — każda runda GLM 4–9 s; przy działającym `api` typowo 3 rundy (geocode → dane równolegle → odpowiedź) ≈ 15 s; dalsze opcje: usunąć dublowanie `answer` + `sections` w JSON (mniej tokenów) albo streaming odpowiedzi
 
