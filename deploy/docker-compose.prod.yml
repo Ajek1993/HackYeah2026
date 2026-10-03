@@ -1,4 +1,4 @@
-# Production stack on the VPS (copy to /mnt/HackYeah2026/docker-compose.prod.yml).
+# Production stack on the VPS, copied as-is to /mnt/HackYeah2026/docker-compose.prod.yml.
 # Differences from docker-compose.yml: no published ports (only the edge nginx reaches the
 # services over app-network), no bind mounts or --reload, static frontend build, restart policy.
 #
