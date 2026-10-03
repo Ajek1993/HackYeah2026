@@ -281,6 +281,7 @@ function MapTextList({ warnings, outages }: { warnings: Warning[]; outages: Powe
           {outages.map((outage) => (
             <li key={outage.id}>
               {outage.planned ? 'Planowane wyłączenie' : 'Awaria'}: {outage.area}
+              {outage.location_precision === 'approximate' && ' (lokalizacja przybliżona)'}
             </li>
           ))}
         </ul>

@@ -47,6 +47,7 @@ The database schema (`db/init/`) is applied only when the `pgdata` volume is cre
 ```bash
 docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/01-schema.sql'
 docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/02-air-quality.sql'
+docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/03-outage-streets.sql'
 ```
 
 Load the data right after the first start (Kraków boundary, shelters, Tauron, IMGW, GIOŚ); afterwards Celery beat refreshes it on its own:

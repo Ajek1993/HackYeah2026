@@ -152,11 +152,13 @@ Freshest reading from GIOŚ or Airly (conflict rule: freshest wins). Envelope `s
       "area": "Kraków, ul. Kobierzyńska 1-50",
       "start": "...",
       "end": "...",
-      "lat": 50.03, "lon": 19.92
+      "lat": 50.03, "lon": 19.92,
+      "location_precision": "street"
     }
   ]
 }
 ```
+- `location_precision`: `exact` (coordinates from Tauron) | `street` (first address of the message geocoded with Nominatim) | `approximate` (Tauron gave only the power district centre, for Kraków: Rynek Główny)
 
 ### `GET /shelters`
 ```json

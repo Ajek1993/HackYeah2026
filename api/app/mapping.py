@@ -117,6 +117,8 @@ def power_outage(row: dict) -> dict[str, Any]:
         "end": iso(row.get("end_at")),
         "lat": row.get("lat"),
         "lon": row.get("lon"),
+        # exact (Tauron coordinates) | street (geocoded first address) | approximate
+        "location_precision": row.get("location_precision", "exact"),
     }
 
 

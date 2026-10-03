@@ -3,6 +3,7 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef } from 'react'
 import type { PowerOutage, Shelter, Warning } from '../../api/data'
 import { formatDistance } from '../../lib/distance'
+import { APPROXIMATE_NOTE, groupOutages, outageCount, outageTitle } from '../../lib/outages'
 
 export type LayerId = 'warnings' | 'power' | 'shelters'
 
@@ -94,17 +95,29 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
     const group = layers.current?.power
     if (!group) return
     group.clearLayers()
-    for (const outage of outages) {
-      if (outage.lat == null || outage.lon == null) continue
-      L.circleMarker([outage.lat, outage.lon], {
-        radius: 9,
-        color: '#ffffff',
+    for (const point of groupOutages(outages)) {
+      const items = point.outages
+        .map(
+          (outage) => `<li><strong>${outageTitle(outage)}</strong><br>${escape(outage.area)}</li>`,
+        )
+        .join('')
+      const count =
+        point.outages.length > 1 ? `<strong>${outageCount(point.outages.length)}</strong>` : ''
+      const note = point.approximate
+        ? `<p style="margin:0 0 6px"><em>${APPROXIMATE_NOTE}</em></p>`
+        : ''
+      // A district centre is not where the power is off: dashed, translucent marker
+      L.circleMarker([point.lat, point.lon], {
+        radius: point.approximate ? 14 : 9,
+        color: point.approximate ? '#8a5a00' : '#ffffff',
         weight: 2,
+        dashArray: point.approximate ? '4 4' : undefined,
         fillColor: '#8a5a00',
-        fillOpacity: 1,
+        fillOpacity: point.approximate ? 0.35 : 1,
       })
         .bindPopup(
-          `<strong>${outage.planned ? 'Planowane wyłączenie prądu' : 'Awaria prądu'}</strong><br>${escape(outage.area)}`,
+          `${note}${count}<ul style="margin:4px 0 0;padding-left:18px;max-height:220px;overflow-y:auto">${items}</ul>`,
+          { maxWidth: 320 },
         )
         .addTo(group)
     }

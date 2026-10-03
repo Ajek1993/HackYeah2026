@@ -60,6 +60,8 @@ export type PowerOutage = {
   end: string | null
   lat: number | null
   lon: number | null
+  // exact: Tauron coordinates; street: first address of the message; approximate: district centre
+  location_precision: 'exact' | 'street' | 'approximate'
 }
 
 export type Shelter = {

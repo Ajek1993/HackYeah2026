@@ -99,6 +99,7 @@ def _outage(now: datetime, key: str, area: str, lat: float, lon: float, hours: i
         "end_at": now + timedelta(hours=hours),
         "lat": lat,
         "lon": lon,
+        "location_precision": "street",
     }
 
 

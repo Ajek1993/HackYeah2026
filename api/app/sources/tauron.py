@@ -8,6 +8,7 @@ import requests
 from app.celery_app import app
 from app.config import settings
 from app.db import get_conn
+from app.sources.outage_streets import locate_streets
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,10 @@ def fetch_tauron_outages(self):
 
     conn = get_conn()
     try:
+        # Outages with exact coordinates need no street lookup
+        streets = locate_streets(
+            conn, (it.get("Message") or "" for it in krakow_items if it.get("CoordinatesType") != 2)
+        )
         with conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT now() AS ts")
@@ -120,6 +125,7 @@ def fetch_tauron_outages(self):
                 for it in krakow_items:
                     geom_wkt = _build_geom_wkt(it)
                     center_wkt = _build_center_wkt(it)
+                    street = streets.get(it.get("Message") or "")
 
                     cur.execute(
                         """
@@ -127,13 +133,14 @@ def fetch_tauron_outages(self):
                             (provider, outage_id, start_at, end_at, type_id,
                              message, source_modified_at, region_ids,
                              address_point_ids, coords_type,
-                             geom, center, radius_m,
+                             geom, center, street_center, radius_m,
                              source_is_active, row_hash, last_seen_at, is_active)
                         VALUES
                             ('tauron', %(outage_id)s, %(start_at)s, %(end_at)s, %(type_id)s,
                              %(message)s, %(modified)s, %(region_ids)s,
                              %(address_point_ids)s, %(coords_type)s,
-                             %(geom)s::geometry, %(center)s::geometry, %(radius_m)s,
+                             %(geom)s::geometry, %(center)s::geometry,
+                             %(street_center)s::geometry, %(radius_m)s,
                              %(is_active)s, %(row_hash)s, %(run_ts)s, true)
                         ON CONFLICT (provider, outage_id, start_at) DO UPDATE SET
                             end_at = EXCLUDED.end_at,
@@ -145,6 +152,7 @@ def fetch_tauron_outages(self):
                             coords_type = EXCLUDED.coords_type,
                             geom = EXCLUDED.geom,
                             center = EXCLUDED.center,
+                            street_center = EXCLUDED.street_center,
                             radius_m = EXCLUDED.radius_m,
                             source_is_active = EXCLUDED.source_is_active,
                             row_hash = EXCLUDED.row_hash,
@@ -163,6 +171,9 @@ def fetch_tauron_outages(self):
                             "coords_type": it.get("CoordinatesType"),
                             "geom": geom_wkt,
                             "center": center_wkt,
+                            "street_center": (
+                                f"SRID=4326;POINT({street[1]} {street[0]})" if street else None
+                            ),
                             "radius_m": it.get("Radius"),
                             "is_active": it.get("IsActive"),
                             "row_hash": _item_hash(it),

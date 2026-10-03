@@ -257,6 +257,13 @@ class TestBuildCenterWkt:
 
 
 class TestFetchTauronOutagesTask:
+    @pytest.fixture(autouse=True)
+    def no_street_geocoding(self):
+        # Street lookup has its own tests (test_outage_streets); keep Nominatim out of these
+        with patch("app.sources.tauron.locate_streets", return_value={}) as locate:
+            self.locate = locate
+            yield
+
     def _mock_db(self, mock_conn):
         mock_cur = MagicMock()
         mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00"}
@@ -361,3 +368,22 @@ class TestFetchTauronOutagesTask:
         params = call_args.kwargs.get("params") or call_args[1].get("params")
         assert "fromDate" in params
         assert "toDate" in params
+
+    @patch("app.sources.tauron.get_conn")
+    @patch("app.sources.tauron.requests.get")
+    def test_district_outage_gets_the_geocoded_street(self, mock_get, mock_conn):
+        item = _make_item(Message="Kraków ul. Litewska 23", CoordinatesType=3)
+        exact = _make_item(OutageId="22222222-2222-2222-2222-222222222222")
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = [item, exact]
+        mock_get.return_value = mock_resp
+        mock_cur, _ = self._mock_db(mock_conn)
+        self.locate.return_value = {"Kraków ul. Litewska 23": (50.0712, 19.9205)}
+
+        fetch_tauron_outages.apply().get(timeout=10)
+
+        # Only the outage without exact coordinates is looked up
+        assert list(self.locate.call_args.args[1]) == ["Kraków ul. Litewska 23"]
+        inserted = [c.args[1] for c in mock_cur.execute.call_args_list if len(c.args) > 1]
+        streets = [params["street_center"] for params in inserted if "street_center" in params]
+        assert streets == ["SRID=4326;POINT(19.9205 50.0712)", None]
