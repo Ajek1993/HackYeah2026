@@ -68,20 +68,20 @@
 
 ## Faza 2 — Agent (autor; równolegle z fazą 1 na mockach z T02)
 
-### T14 — Klient GLM 5.3 + system prompt · `todo` · [A]
+### T14 — Klient GLM 5.3 + system prompt · `review` · [A]
 - Klient z tool calling, limit tokenów w konfiguracji; system prompt: tylko dane z narzędzi, „Brak danych”, sekcje sytuacja / przed / w trakcie / po, dopisek o służbach, off-topic maks. 2 zdania, tylko Kraków, po polsku
 - **Gotowe gdy:** test z zamockowanym GLM sprawdza obecność zasad w prompcie i limit tokenów
 
-### T15 — Narzędzia agenta · `todo` · [A]
+### T15 — Narzędzia agenta · `review` · [A]
 - `geocode`, `get_warnings`, `get_water_levels`, `get_air_quality`, `get_power_outages`, `find_nearest_shelter`, `get_guide` — wołają `api`
 - **Gotowe gdy:** testy narzędzi na zamockowanym `api` (w tym `is_stale`, brak danych)
 
-### T16 — Endpoint czatu z pamięcią sesji · `todo` · [A]
+### T16 — Endpoint czatu z pamięcią sesji · `review` · [A]
 - `POST /chat` z `session_id`; kontekst (adres, skład gospodarstwa) w pamięci procesu z TTL, bez zapisu do db i logów
 - Odpowiedź strukturalna: `answer`, `sources[]`, `emergency` (bool), `out_of_area` (bool)
 - **Gotowe gdy:** test: drugie pytanie w sesji korzysta z adresu z pierwszego; brak logowania treści
 
-### T17 — Reguły specjalne · `todo` · [A]
+### T17 — Reguły specjalne · `review` · [A]
 - Adres poza Krakowem → stały komunikat zasięgu; zagrożenie życia → `emergency=true`; błąd/timeout GLM → komunikat „Agent chwilowo niedostępny”
 - **Gotowe gdy:** testy dla wszystkich trzech przypadków
 
@@ -143,7 +143,7 @@
 - Commity: tylko na prośbę autora, branch `main`
 - Review: po każdej fazie
 - Claude realizuje taski autora [A]; backend [B] robi kolega
-- GLM: model `glm-5.3`, base URL `https://api.z.ai/api/paas/v4/` (zgodny z OpenAI SDK, tool calling wspierany)
+- GLM: model `glm-5.3`, base URL `https://api.z.ai/api/coding/paas/v4/` (GLM Coding Plan — klucz autora nie działa na `/api/paas/v4/`: 429/1113 brak środków; zgodny z OpenAI SDK, tool calling wspierany)
 
 ### Faza 0 — postęp
 - T02: szkic `docs_ai/api-contract.md` — czeka na akceptację backendu
@@ -151,11 +151,24 @@
 
 - T03: `docker-compose.yml` (db Postgres 16, api :8000, agent :8001, frontend :5173), Dockerfile dla api/agent (Python 3.12) i frontend (Node 22), Makefile; `/health` api i agent → 200; pytest api 2/2, agent 1/1, vitest 5/5, ruff + oxlint OK; `seed` to stub do T06. Zweryfikowane komendami docker compose (make niezainstalowany)
 
+### Faza 2 — postęp
+- T14: `agent/app/llm.py` (`GLMClient`: OpenAI SDK, tool calling, `max_tokens`/`temperature`/`timeout` z konfiguracji, błędy → `LLMUnavailableError`), `agent/app/prompt.py` (system prompt + stałe komunikaty), nowe zmienne `GLM_MAX_TOKENS=1200`, `GLM_TEMPERATURE=0.2`, `GLM_TIMEOUT=30`; pytest agent 16/16, ruff OK; smoke test na żywym GLM OK (tool call `geocode`, komunikat zasięgu, off-topic 2 zdania, poprawny JSON; 4–10 s)
+- T15: `agent/app/tools.py` — `TOOL_DEFINITIONS` (7 narzędzi, schematy function calling) + `ToolExecutor` (httpx → `api`); zwraca `ToolResult` (treść dla modelu, `sources[]` z envelope, `payload` dla reguł T17); błąd / brak `api` → „Brak danych” zamiast wyjątku; `data: null` → `note: "Brak danych"`; nieaktualne dane → `age_hours`; pytest agent 37/37, ruff OK; na żywym GLM model sam wybiera `geocode` dla miejsca i `get_guide` dla pytań poradnikowych
+- T16: `POST /chat` + `DELETE /chat/{session_id}` (`agent/app/main.py`), `ChatService` (`agent/app/chat.py`: pętla tool calling z limitem `AGENT_MAX_TOOL_ROUNDS`, potem wymuszona odpowiedź bez narzędzi; parsowanie JSON z fallbackiem na tekst; `sources[]` z narzędzi, deduplikowane; `is_simulated` z dowolnego źródła), `SessionStore` (`agent/app/session.py`: pamięć procesu, TTL `SESSION_TTL_SECONDS`, limit `SESSION_MAX_MESSAGES`, tylko pytania i odpowiedzi — bez wyników narzędzi); pytest agent 56/56, ruff OK; e2e na żywym GLM: drugie pytanie korzysta z adresu z pierwszego, bez `api` → „Brak danych”; czas odpowiedzi 25–31 s
+
+- Po review T16 (decyzje autora): thinking GLM wyłączony (`GLM_THINKING=disabled`, `extra_body`); rady tylko z poradnika — bez `get_guide` agent podaje „Brak danych” + 112 + RCB (poradnik podepniemy z T12); `disclaimer: null` dla off-topic i spoza Krakowa — zaakceptowane; prompt prosi o równoległe wywołania narzędzi; pytest agent 57/57
+- T17: zasięg — `geocode` z `found: true, in_krakow: false` (i żadnym miejscem w Krakowie) przerywa pętlę bez kolejnej rundy GLM i zwraca stały komunikat (bez sekcji, źródeł, dopisku); flaga `out_of_area` od modelu też wymusza stały komunikat; zagrożenie życia — `emergency` od modelu (fallback słów kluczowych: front, T19); `LLMUnavailableError` → `503 {"error": "agent_unavailable", "message": "Agent chwilowo niedostępny"}`, pytanie nie trafia do sesji; fixture `make_client` przeniesiona do `tests/conftest.py`; pytest agent 66/66, ruff OK; na żywym GLM: „woda wlewa się do piwnicy…” → `emergency: true`, odpowiedź zaczyna się od „Dzwoń 112” (13 s)
+- Po review T17 (decyzja autora: „sam poradnik, 112 + RCB”): prompt zakazuje własnych kroków także przy `emergency`; dodatkowo w kodzie — `emergency` bez danych z `get_guide` → stały komunikat `EMERGENCY_NO_GUIDE_MESSAGE` („Dzwoń 112. Brak danych z poradnika bezpieczeństwa — postępuj według poleceń służb i śledź komunikaty RCB.”), bo sam prompt łamany był w 2 na 3 próbach; pytest agent 69/69
+
 ### Odstępstwa
 - Lint frontendu: `oxlint` (domyślny w szablonie Vite) zamiast `eslint`
 - Zakładka czatu nazwana „Zapytaj” (czytelniej niż „Czat”)
+- T14: dopisek o służbach dokleja kod (`DISCLAIMER`), nie LLM — gwarancja obecności w każdej odpowiedzi; prompt zabrania go powtarzać i przedstawiać KryzIO jako zastępstwo służb
+- T14: prompt po angielsku (zasada: kod po angielsku), stałe komunikaty i odpowiedzi po polsku; model zwraca JSON (`answer`, `sections`, `emergency`, `out_of_area`, `off_topic`), a `sources` w T16 zbierane będą z odpowiedzi narzędzi, nie od modelu
 
 ### Do decyzji autora
 - Brak `make` w środowisku Windows (Git Bash) — Makefile z T03 wymaga instalacji make (np. `choco install make`) lub WSL
 - Akceptacja kontraktu API przez backend
+- Treść nowego stałego komunikatu `EMERGENCY_NO_GUIDE_MESSAGE` do akceptacji
+- T16: czas odpowiedzi — każda runda GLM 4–9 s; przy działającym `api` typowo 3 rundy (geocode → dane równolegle → odpowiedź) ≈ 15 s; dalsze opcje: usunąć dublowanie `answer` + `sections` w JSON (mniej tokenów) albo streaming odpowiedzi
 

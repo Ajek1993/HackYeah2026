@@ -32,13 +32,14 @@ make lint        # ruff + oxlint
 make down
 ```
 
-Fill in `GLM_API_KEY` and `AIRLY_API_KEY` in `.env`.
+Fill in `GLM_API_KEY` and `AIRLY_API_KEY` in `.env`. The default `GLM_BASE_URL` targets the GLM Coding Plan endpoint; pay-as-you-go keys use `https://api.z.ai/api/paas/v4/`.
 
 | Service | URL |
 |---------|-----|
 | Frontend | http://localhost:5173 |
 | API | http://localhost:8000/health |
 | Agent | http://localhost:8001/health |
+| Agent API docs (try `POST /chat`) | http://localhost:8001/docs |
 
 The Demo tab (simulated scenarios) is visible only with `VITE_DEMO_MODE=true` and is meant for presentations only.
 
