@@ -40,24 +40,36 @@ Fill in `GLM_API_KEY` and `AIRLY_API_KEY` in `.env`. The default `GLM_BASE_URL` 
 | API | http://localhost:8000/health |
 | Agent | http://localhost:8001/health |
 | Agent API docs (try `POST /chat`) | http://localhost:8001/docs |
+| API docs | http://localhost:8000/docs |
 
-The database schema (`db/init/`) is applied only when the `pgdata` volume is created. If you started the stack before the schema existed, apply it once:
+The database schema (`db/init/`) is applied only when the `pgdata` volume is created. If you started the stack before a schema file existed, apply the missing files once:
 
 ```bash
 docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/01-schema.sql'
+docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/02-air-quality.sql'
+```
+
+Load the data right after the first start (Kraków boundary, shelters, Tauron, IMGW, GIOŚ); afterwards Celery beat refreshes it on its own:
+
+```bash
+make seed
 ```
 
 The Demo tab (simulated scenarios) is visible only with `VITE_DEMO_MODE=true` and is meant for presentations only.
 
 ## Data sources
 
-- IMGW — meteorological and hydrological warnings, water levels
-- Tauron Dystrybucja — planned and unplanned power outages
-- GIOŚ — air quality
-- Airly — air quality (cached, refreshed every 2h due to rate limits)
-- Government safety guide (Poradnik bezpieczeństwa)
-- Shelters in Kraków — source to be documented
-- OpenStreetMap / Nominatim — maps and geocoding
+| Source | Used for | Refresh | Terms |
+|--------|----------|---------|-------|
+| [IMGW-PIB public data](https://danepubliczne.imgw.pl/) | Meteorological and hydrological warnings, water levels | every 45 min | Public data; source: IMGW-PIB |
+| [Tauron Dystrybucja](https://www.tauron-dystrybucja.pl/wylaczenia) | Planned and unplanned power outages | every 30 min | Publicly available outage list |
+| [Punkty schronienia (KG PSP, dane.gov.pl)](https://dane.gov.pl) | Shelters and protective places | every 2 h | Open data, dane.gov.pl |
+| [GIOŚ air quality API](https://powietrze.gios.gov.pl/) | Air quality index, PM2.5, PM10 | every 1 h | Public data; source: GIOŚ |
+| [Airly](https://airly.org/) | Air quality (only when `AIRLY_API_KEY` is set) | every 2 h (rate limit) | Airly API terms |
+| [Poradnik bezpieczeństwa 1/2025](https://www.gov.pl/web/poradnikbezpieczenstwa) (MON, MSWiA, RCB) | Before / during / after steps in `api/data/guide/` | static | Official document |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) via [Nominatim](https://nominatim.org/) | Map tiles, geocoding, Kraków boundary | boundary weekly, geocoding cached 1 h in memory | © OpenStreetMap contributors, ODbL; Nominatim usage policy (max 1 req/s) |
+
+The safety guide covers flood, power outage, air attack and shelters, fire and general preparedness. It has no chapter on drought or air quality, so for those topics the agent answers "Brak danych" instead of inventing advice.
 
 ## Use of AI and external resources
 

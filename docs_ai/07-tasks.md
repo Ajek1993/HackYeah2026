@@ -29,40 +29,40 @@
 
 ## Faza 1 — Dane (backend)
 
-### T05 — Model danych i cache w `db` · `todo` · [B]
+### T05 — Model danych i cache w `db` · `done` · [B]
 - Tabele: odczyty źródeł (`source`, `kind`, `payload`, `fetched_at`), schrony
 - **Gotowe gdy:** migracja/inicjalizacja przy starcie, test zapisu i odczytu ostatniego odczytu
 
-### T06 — Schrony: JSON + seed + najbliższy schron · `todo` · [B]
+### T06 — Schrony: JSON + seed + najbliższy schron · `review` · [B]
 - `api/data/shelters.json` z realnego źródła (źródło w README), `make seed`, `GET /shelters`, `GET /shelters/nearest`
 - **Gotowe gdy:** test: dla współrzędnych na Dębnikach zwraca najbliższy schron z odległością
 
-### T07 — Geokodowanie + walidacja Krakowa · `todo` · [B]
+### T07 — Geokodowanie + walidacja Krakowa · `review` · [B]
 - `GET /geocode?q=` przez Nominatim (z User-Agent i limitem zapytań), flaga `in_krakow`
 - **Gotowe gdy:** testy: „Kobierzyńska, Kraków” → `in_krakow=true`; „Skawina” → `false`
 
-### T08 — Źródło IMGW (ostrzeżenia + stany wód) · `todo` · [B]
+### T08 — Źródło IMGW (ostrzeżenia + stany wód) · `review` · [B]
 - Moduł `api/app/sources/imgw.py`, zapis do cache
 - **Gotowe gdy:** `GET /warnings` i `GET /water-levels` zwracają dane z `source` i `updated_at`; test na zapisanym fixture
 
-### T09 — Źródło Tauron (wyłączenia prądu) · `todo` · [B]
+### T09 — Źródło Tauron (wyłączenia prądu) · `review` · [B]
 - Scraping/API Tauron Dystrybucja dla Krakowa
 - **Gotowe gdy:** `GET /power-outages` zwraca listę z lokalizacją; test na fixture
 
-### T10 — Jakość powietrza GIOŚ + Airly · `todo` · [B]
+### T10 — Jakość powietrza GIOŚ + Airly · `review` · [B]
 - Oba źródła; przy konflikcie zwracany najświeższy odczyt (US-04)
 - **Gotowe gdy:** `GET /air-quality` zwraca jeden odczyt z `source`; test konfliktu źródeł
 
-### T11 — Harmonogram odświeżania + nieaktualność · `todo` · [B]
+### T11 — Harmonogram odświeżania + nieaktualność · `review` · [B]
 - Zadanie w tle: Airly co 2h, pozostałe co 30 min; błąd źródła → zostaje ostatni cache
 - `is_stale=true` dla danych starszych niż 3h; brak cache → odpowiedź „brak danych”
 - **Gotowe gdy:** testy: stale > 3h, błąd źródła nie kasuje cache, Airly nie częściej niż co 2h
 
-### T12 — Poradnik bezpieczeństwa · `todo` · [B]
+### T12 — Poradnik bezpieczeństwa · `review` · [B]
 - Fragmenty poradnika jako pliki w `api/data/guide/` (powódź, brak prądu, atak / ukrycie, pożar, susza, jakość powietrza, ogólne), `GET /guide/{topic}`
 - **Gotowe gdy:** każdy temat zwraca tekst ze źródłem
 
-### T13 — `GET /summary` dla panelu · `todo` · [B]
+### T13 — `GET /summary` dla panelu · `review` · [B]
 - Zbiorcze podsumowanie zagrożeń w Krakowie (kafelki panelu)
 - **Gotowe gdy:** jeden request zwraca stan wszystkich źródeł z `updated_at` i `is_stale`
 
@@ -87,15 +87,15 @@
 
 ## Faza 3 — Frontend (autor)
 
-### T18 — Czat · `review` · [A]
+### T18 — Czat · `done` · [A]
 - Okno czatu, wskaźnik „agent pisze…”, źródła z godziną pod odpowiedzią, oznaczenie „dane sprzed X godz.”, dopisek o służbach, `session_id` w `sessionStorage`
 - **Gotowe gdy:** pytanie o Kobierzyńską zwraca odpowiedź ze źródłami end-to-end
 
-### T19 — Szybkie pytania + baner 112 · `review` · [A]
+### T19 — Szybkie pytania + baner 112 · `done` · [A]
 - Przyciski szybkich pytań (F6); baner „Dzwoń 112” z `tel:112` przy `emergency=true` **lub** słowach kluczowych (fallback)
 - **Gotowe gdy:** test vitest: fallback słów kluczowych pokazuje baner bez odpowiedzi agenta
 
-### T20 — Zakładka Mapa · `review` · [A]
+### T20 — Zakładka Mapa · `done` · [A]
 - Kafelki z `/summary`, mapa Leaflet + OSM, warstwy zagrożeń i schronów, wyszukiwanie adresu → marker + najbliższy schron z odległością
 - **Gotowe gdy:** po wpisaniu adresu na mapie widać marker i najbliższy schron; nieaktualne kafelki oznaczone
 
@@ -178,6 +178,20 @@
 - T20: `src/api/data.ts` (klient `api` wg kontraktu), `MapView` — kafelki z `/summary` (status słownie, nie tylko kolorem; „dane sprzed X godz.”; „Dane symulowane”), wyszukiwanie adresu (`/geocode` → poza Krakowem stały komunikat, nie znaleziono → prośba o doprecyzowanie) → `/shelters/nearest?limit=1` → karta schronu z odległością; `LeafletMap` (Leaflet 1.9.4 + kafelki OSM, bez `react-leaflet`): warstwy ostrzeżeń (GeoJSON), wyłączeń prądu i schronów z przełącznikami, schron jako znak obrony cywilnej, przerywana linia adres → najbliższy schron; vitest 41/41 (Leaflet zamockowany w testach), oxlint OK, build OK; brak zrzutów ekranu (rozszerzenie Chrome niepołączone); bez endpointów `api` mapa pokazuje „Brak danych”
 - T29: decyzje autora — zgoda na lokalizację przy pierwszym pytaniu, zasięg przez nowy `GET /reverse` w `api`; kontrakt zaktualizowany (`/reverse`, pole `location`); agent: `reverse_geocode`, `build_location_note` (nazwane miejsce ma pierwszeństwo — na żywym GLM sprawdzone dla pytania bez adresu i z „Rynkiem Głównym”); front: `src/lib/geolocation.ts`, `useChat` (lokalizacja raz na stronę, tylko w pamięci), podpowiedź pod polem pytania, „Czekam na zgodę na lokalizację”, przycisk w Mapie; pytest agent 80/80, vitest 48/48, oxlint + build OK
 
+- Faza 3 zaakceptowana przez autora — T18–T20 `done`; T29: część [A] (agent + front) zaakceptowana, task `in_progress` do czasu `GET /reverse` w `api` [B]
+
+### Backend — endpointy `api` (branch `add-api-endpoints`, decyzja zespołu: robi autor/Claude)
+- Scrapery kolegi (schrony, Tauron, IMGW, Celery beat, schemat PostGIS) + nowe w `api`:
+  - `GET /shelters`, `/shelters/nearest` (KNN po indeksie, sortowanie w metrach), `/warnings`, `/water-levels`, `/power-outages`, `/air-quality`, `/geocode`, `/reverse`, `/guide/{topic}`, `/summary` wg kontraktu
+  - granica Krakowa z OSM/Nominatim w `ref_areas` (powiat 1261) — filtr „w Krakowie” (`ST_Contains`, fallback bbox) i geometria ostrzeżeń meteo
+  - GIOŚ (co 1h, 9 stacji, `db/init/02-air-quality.sql`), Airly tylko z kluczem (co 2h)
+  - poradnik: `api/data/guide/*.json` wiernie z „Poradnika bezpieczeństwa” 1/2025 (gov.pl) — powódź, blackout, atak z powietrza + schronienia, pożar, ogólne; susza i jakość powietrza nie występują w poradniku → `data: null`
+  - Nominatim: 1 req/s, User-Agent z kontaktem, cache tylko w pamięci; filtr access logu usuwa query string (adresy i współrzędne nie trafiają do logów — audyt X1)
+  - czasy w odpowiedziach w strefie Kraków (`+02:00`)
+- Zależności: `httpx`, `psycopg[pool]` (decyzja autora); async pool w lifespan FastAPI
+- Weryfikacja: pytest api 185/185 (w tym testy integracyjne na PostGIS), agent 80/80, vitest 48/48; e2e na żywym GLM: Kobierzyńska → stany Wisły/Rudawy/Wilgi i ostrzeżenie o suszy z godziną + kroki z poradnika; Skawina → komunikat zasięgu (2,4 s); „najbliższy schron” z lokalizacją → 3 schrony z odległością
+- Lint: na prośbę autora poprawione także starsze scrapery i ich testy (formatowanie, importy, `raise ... from exc` przy retry, dokładne wyjątki zamiast `pytest.raises(Exception)`); `make lint` przechodzi dla api, agent i frontend
+
 ### Odstępstwa
 - Lint frontendu: `oxlint` (domyślny w szablonie Vite) zamiast `eslint`
 - Zakładka czatu nazwana „Zapytaj” (czytelniej niż „Czat”)
@@ -188,8 +202,8 @@
 
 ### Do decyzji autora
 - Treść nowego stałego komunikatu `EMERGENCY_NO_GUIDE_MESSAGE` do akceptacji
-- Backend: zaimplementować `GET /reverse` (T29)
-- Prywatność (do backendu): `GET /geocode?q=<adres>` i `GET /reverse?lat&lon` — access log uvicorna zapisuje query string, czyli adres użytkownika (SPEC: Never); wyłączyć access log w `api` (`--no-access-log`) albo zmienić na `POST` (zmiana kontraktu)
+- Prywatność logów `api`: rozwiązane filtrem access logu (query string usuwany); logi przyszłego reverse proxy trzeba skonfigurować tak samo (`$uri` zamiast `$request_uri`)
 - T20: nowa zależność `leaflet` + `@types/leaflet` (Leaflet był w ustalonym stacku architektury)
+- Przy `emergency` z załadowanym poradnikiem model nadal dodaje pojedyncze kroki spoza poradnika (np. „nie schodź do piwnicy”) — do zaostrzenia w poprawkach z audytu
 - T16: czas odpowiedzi — każda runda GLM 4–9 s; przy działającym `api` typowo 3 rundy (geocode → dane równolegle → odpowiedź) ≈ 15 s; dalsze opcje: usunąć dublowanie `answer` + `sections` w JSON (mniej tokenów) albo streaming odpowiedzi
 

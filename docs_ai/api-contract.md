@@ -31,8 +31,8 @@ Every endpoint returning data from an external source wraps it like this:
 ```
 
 - `source` — human-readable source name shown to the user
-- `updated_at` — when the source data was fetched (not when the request was made)
-- `is_stale` — `true` when `updated_at` is older than 3h
+- `updated_at` — when KryzIO last fetched the source (not when the request was made), in Kraków time (`+02:00` / `+01:00`); for the static safety guide: its publication date
+- `is_stale` — `true` when `updated_at` is older than 3h (always `false` for the safety guide)
 - `is_simulated` — `true` only when a demo scenario is active
 - `data` — `null` when there is no cached data at all ("Brak danych")
 
@@ -95,6 +95,7 @@ Active meteorological and hydrological warnings relevant to the point (or all of
 }
 ```
 - `kind`: `flood` | `storm` | `wind` | `heat` | `frost` | `drought` | `fire` | `bomb_threat` | `other`
+- Kraków-wide: meteo warnings for TERYT 1261, hydro warnings for catchments covering Kraków; `lat` / `lon` accepted but not used for filtering
 - `level`: 1–3 (IMGW scale); `geometry`: GeoJSON or `null`
 
 ### `GET /water-levels`
@@ -115,7 +116,9 @@ Active meteorological and hydrological warnings relevant to the point (or all of
   ]
 }
 ```
-- `trend`: `rising` | `falling` | `stable` | `null`
+- `trend`: `rising` | `falling` | `stable` | `null` (currently always `null`: no measurement history is stored)
+- Extra field `status`: `normal` | `warning` | `alarm` | `unknown` (no thresholds published)
+- Stations inside Kraków or within 15 km of the centre, closest first
 
 ### `GET /air-quality?lat=&lon=`
 Freshest reading from GIOŚ or Airly (conflict rule: freshest wins). Envelope `source` says which one was used.
@@ -133,6 +136,8 @@ Freshest reading from GIOŚ or Airly (conflict rule: freshest wins). Envelope `s
 }
 ```
 - `index`: `very_good` | `good` | `moderate` | `sufficient` | `bad` | `very_bad`
+- Nearest station with an index within 10 km of the point (default: city centre); `pm25` / `pm10` may be `null`
+- `data: null` when no station has a current index
 
 ### `GET /power-outages?lat=&lon=`
 ```json
@@ -160,7 +165,10 @@ Freshest reading from GIOŚ or Airly (conflict rule: freshest wins). Envelope `s
   ]
 }
 ```
-- `type`: `shelter` | `hiding_place`
+- `type`: `shelter` | `hiding_place` (`shelter` only when the source names the object a "schron")
+- `capacity`: `null` — not published by the source
+- Extra field `availability`: e.g. `Całodobowa`, `Na żądanie`, `Określone godziny`
+- `GET /shelters` returns shelters inside Kraków
 
 ### `GET /shelters/nearest?lat=&lon=&limit=3`
 Same envelope, `data` = list sorted by distance, each item extended with `distance_m` (integer).
@@ -181,6 +189,7 @@ Same envelope, `data` = list sorted by distance, each item extended with `distan
 }
 ```
 - Unknown topic → `404`
+- Topic not covered by the guide (`drought`, `air_quality`) → `data: null`
 
 ### `GET /summary`
 Data for the map tab tiles — one request, all sources.
