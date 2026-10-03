@@ -1,5 +1,7 @@
 import type { Exchange } from '../../hooks/useChat'
+import { looksLikeEmergency } from '../../lib/emergency'
 import { ActionPlan } from './ActionPlan'
+import { EmergencyBanner } from './EmergencyBanner'
 import { RichText } from './RichText'
 import { SourceList } from './SourceList'
 
@@ -16,6 +18,8 @@ type Props = {
 
 export function ExchangeView({ exchange, onRetry, retryDisabled }: Props) {
   const { question, status, response, error } = exchange
+  // Keyword fallback shows the banner at once, without waiting for (or despite failure of) the agent.
+  const emergency = Boolean(response?.emergency) || looksLikeEmergency(question)
 
   return (
     <article aria-label={`Pytanie: ${question}`} className="flex flex-col gap-4">
@@ -23,6 +27,8 @@ export function ExchangeView({ exchange, onRetry, retryDisabled }: Props) {
         <span className="sr-only">Twoje pytanie: </span>
         {question}
       </p>
+
+      {emergency && <EmergencyBanner />}
 
       {status === 'pending' && (
         <div className="flex items-center gap-3 text-ink-muted">

@@ -58,7 +58,8 @@ export function ChatView() {
                 <li key={question}>
                   <button
                     type="button"
-                    onClick={() => setMessage(question)}
+                    onClick={() => ask(question)}
+                    disabled={pending}
                     className="min-h-14 w-full rounded-lg border-2 border-line bg-surface px-4 py-3 text-left font-semibold text-vistula-deep hover:border-vistula"
                   >
                     {question}
