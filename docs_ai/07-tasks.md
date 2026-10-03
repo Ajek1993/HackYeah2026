@@ -113,8 +113,10 @@
 - X5: przełączanie wymaga `X-Demo-Token` (`DEMO_ADMIN_TOKEN`), scenariusz wygasa po `DEMO_TTL_MINUTES`; schrony i poradnik zostają prawdziwe
 - **Gotowe gdy:** testy: aktywacja scenariusza zmienia `/warnings`; przy fladze false → 404
 
-### T22 — Zakładka Demo we froncie · `todo` · [A]
+### T22 — Zakładka Demo we froncie · `review` · [A]
 - Wybór scenariusza, stały baner SYMULACJA, czat i mapa na danych symulowanych, przełączenie resetuje czat
+- Baner na każdej zakładce (taśma ostrzegawcza, godzina wygaśnięcia, „Zakończ symulację”); pytania podpowiedzi per scenariusz; `VITE_DEMO_TOKEN` = `DEMO_ADMIN_TOKEN`
+- Agent: zawsze pobiera ostrzeżenia przy odpowiedzi o miejsce (inaczej pomijał symulowany alarm, gdy użytkownik sam pisał „ogłoszono alarm”)
 - **Gotowe gdy:** wszystkie 3 scenariusze przeklikane bez błędów; pytanie w scenariuszu ataku zwraca komunikat + poradnik + schron
 
 ## Faza 5 — Wdrożenie i wykończenie

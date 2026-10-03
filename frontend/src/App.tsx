@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ChatView } from './components/ChatView'
 import { DemoView } from './components/DemoView'
 import { EmergencyBar } from './components/EmergencyBar'
 import { Logo } from './components/Logo'
 import { MapView } from './components/MapView'
+import { SimulationBanner } from './components/SimulationBanner'
 import { TabNav, type TabId } from './components/TabNav'
 import { config } from './config/env'
+import { findScenario } from './config/demo'
 import { getTabs } from './config/tabs'
+import { useDemo } from './hooks/useDemo'
 
 type Props = {
   demoMode?: boolean
@@ -15,6 +18,17 @@ type Props = {
 export default function App({ demoMode = config.demoMode }: Props) {
   const [active, setActive] = useState<TabId>('chat')
   const tabs = getTabs(demoMode)
+  const demo = useDemo(demoMode)
+  const scenario = findScenario(demo.active)
+  // A new scenario means new data: chat and map start over (keyed remount)
+  const dataKey = scenario?.id ?? 'live'
+  const mainRef = useRef<HTMLElement>(null)
+
+  function openTab(id: TabId) {
+    setActive(id)
+    // The button that opened the tab disappears with the Demo panel; keep focus in the page
+    mainRef.current?.focus()
+  }
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -24,6 +38,7 @@ export default function App({ demoMode = config.demoMode }: Props) {
       >
         Przejdź do treści
       </a>
+      {demoMode && <SimulationBanner demo={demo} />}
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-4">
           <Logo />
@@ -31,11 +46,16 @@ export default function App({ demoMode = config.demoMode }: Props) {
         </div>
       </header>
 
-      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
+      <main
+        ref={mainRef}
+        id="main"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-3xl flex-1 px-4 py-8"
+      >
         <div id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`}>
-          {active === 'chat' && <ChatView />}
-          {active === 'map' && <MapView />}
-          {active === 'demo' && demoMode && <DemoView />}
+          {active === 'chat' && <ChatView key={dataKey} quickQuestions={scenario?.questions} />}
+          {active === 'map' && <MapView key={dataKey} />}
+          {active === 'demo' && demoMode && <DemoView demo={demo} onOpenTab={openTab} />}
         </div>
       </main>
 

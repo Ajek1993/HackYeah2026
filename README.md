@@ -55,7 +55,7 @@ Load the data right after the first start (Kraków boundary, shelters, Tauron, I
 make seed
 ```
 
-The Demo tab (simulated scenarios) is visible only with `VITE_DEMO_MODE=true` and is meant for presentations only.
+The Demo tab (simulated scenarios) is visible only with `VITE_DEMO_MODE=true` and is meant for presentations only. The `api` needs `DEMO_MODE=true` and a random `DEMO_ADMIN_TOKEN` (sent as `X-Demo-Token` to switch scenarios; the frontend reads it from `VITE_DEMO_TOKEN`, which ends up in the bundle); an active scenario switches back to real data after `DEMO_TTL_MINUTES`.
 
 ## Data sources
 

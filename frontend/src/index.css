@@ -19,6 +19,7 @@
   --color-ok: #2f7d4f;
   --color-caution: #8a5a00;
   --color-caution-soft: #fff4d6;
+  --color-tape: #f5b800;
   --color-danger: #b42318;
   --color-danger-soft: #fdecea;
 }
@@ -46,5 +47,16 @@
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
+  }
+}
+
+@layer components {
+  /* Barrier tape of a civil defence drill: marks simulated data */
+  .hazard-tape {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--color-tape) 0 14px,
+      var(--color-ink) 14px 28px
+    );
   }
 }

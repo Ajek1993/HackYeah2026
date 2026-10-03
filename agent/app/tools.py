@@ -110,8 +110,9 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
     ),
     _function(
         "get_warnings",
-        "Active IMGW meteorological and hydrological warnings for a point in Kraków "
-        "(or the whole city when no coordinates are given).",
+        "Active warnings for a point in Kraków (or the whole city when no coordinates are "
+        "given): IMGW meteorological and hydrological warnings and alarms such as an air "
+        "attack (`kind: bomb_threat`).",
         {"lat": _LAT, "lon": _LON},
         [],
     ),
