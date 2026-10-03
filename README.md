@@ -19,7 +19,7 @@ Work in progress — repository skeleton. Planning documents live in [`docs_ai/`
 | `agent` | Python 3.12 + FastAPI, GLM 5.3 (tool calling) | Conversational agent using `api` as its only data source |
 | `db` | PostgreSQL 16 | Cache of source readings, shelters |
 
-Deployment: `frontend` on Vercel, `api` + `agent` + `db` via Docker Compose on a VPS.
+Deployment: everything on the team's VPS via Docker Compose, behind a reverse proxy with HTTPS that also serves the static `frontend` build.
 
 ## Getting started
 

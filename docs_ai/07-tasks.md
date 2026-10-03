@@ -122,19 +122,21 @@
 ## Faza 5 — Wdrożenie i wykończenie
 
 ### T23 — Deploy backendu na VPS · `todo` · [B]
-- docker-compose na VPS, reverse proxy z HTTPS, CORS na domenę Vercela
+- Decyzja autora: rezygnujemy z Vercela, całość (frontend, api, agent, db) na VPS
+- docker-compose na VPS, reverse proxy z HTTPS, CORS na domenę aplikacji
 - Z audytu bezpieczeństwa (infrastruktura, odłożone przez autora):
   - N1: `docker-compose.prod.yml` — sieci `edge` / `backend (internal)`, porty tylko na proxy, bez bind mountów i `--reload`, `restart`, healthchecki, `USER` w obrazach Python, hasło Redis
   - N2/N3: proxy z TLS 1.2/1.3, `server_tokens off`, nagłówki bezpieczeństwa, limity body i timeouty, `proxy_set_header` + uvicorn `--proxy-headers --forwarded-allow-ips` (inaczej limiter widzi IP proxy), access log z `$uri` zamiast `$request_uri`
   - D3: role DB (scraper zapis, api tylko odczyt), agent bez zmiennych DB
   - D4: osobne pliki env na usługę, hasła przez `secrets:`, `statement_timeout` i `idle_in_transaction_session_timeout`
   - X2: testy poza entrypointem, obraz bez zależności dev; X3: lockfile z hashami i `pip-audit`
-  - Na serwerze: `APP_ENV=production`, losowy `API_INTERNAL_TOKEN`
+  - Na serwerze: `APP_ENV=production`, losowy `API_INTERNAL_TOKEN`, losowe hasło Postgresa, `DEMO_MODE=true` z losowym `DEMO_ADMIN_TOKEN` (instancja prezentacyjna)
 - **Gotowe gdy:** `https://<domena>/health` → 200 z przeglądarki
 
-### T24 — Deploy frontendu na Vercel · `todo` · [A]
-- Zmienne `VITE_*` wskazują na VPS; wersja prezentacyjna z `VITE_DEMO_MODE=true`
-- Z audytu: `vercel.json` z nagłówkami (`frame-ancestors 'none'`, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy: geolocation=(self)`); CSP z `<meta>` (build) już jest
+### T24 — Deploy frontendu na VPS · `todo` · [A]
+- Zamiast Vercela: statyczny build (`npm run build`) serwowany przez reverse proxy z T23, bez serwera deweloperskiego Vite
+- Zmienne `VITE_*` wskazują publiczne adresy `api` i `agent` na VPS (wbudowywane przy buildzie); wersja prezentacyjna z `VITE_DEMO_MODE=true` i `VITE_DEMO_TOKEN`
+- Z audytu (F4, N2): nagłówki w proxy (`frame-ancestors 'none'`, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy: geolocation=(self)`); CSP z `<meta>` (build) już jest
 - **Gotowe gdy:** publiczny link działa end-to-end (czat, mapa, demo)
 
 ### T25 — README końcowe · `todo` · [A]
