@@ -16,6 +16,7 @@ import {
 import { formatDistance } from '../lib/distance'
 import { requestLocation } from '../lib/geolocation'
 import { googleMapsDirectionsUrl, NAVIGATE_LABEL, NEW_TAB_HINT } from '../lib/navigation'
+import { ExternalIcon } from './ExternalIcon'
 import { LeafletMap, type LayerId, type MapPoint } from './map/LeafletMap'
 import { SummaryTiles } from './map/SummaryTiles'
 import { WARNING_HATCH } from './map/warningHatch'
@@ -250,20 +251,6 @@ export function MapView() {
         </div>
       </div>
     </section>
-  )
-}
-
-function ExternalIcon() {
-  return (
-    <svg viewBox="0 0 20 20" className="size-5" aria-hidden="true" fill="none">
-      <path
-        d="M11 3h6v6M17 3l-8 8M8 5H4v11h11v-4"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   )
 }
 

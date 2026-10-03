@@ -66,6 +66,42 @@ describe('ChatView', () => {
     expect(postedBodies()[0].message).toBe('Czy na Testowej grozi zalanie?')
   })
 
+  it('links the nearest shelter to walking directions in Google Maps', async () => {
+    const shelter = { name: 'Schron testowy', address: 'Testowa 1', distance_m: 420 }
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        reply({
+          shelters: [
+            { ...shelter, lat: 50.05, lon: 19.94 },
+            { name: 'Piwnica testowa', address: '', lat: 50.06, lon: 19.95, distance_m: 900 },
+          ],
+        }),
+      ),
+    )
+    render(<ChatView />)
+
+    await ask('Gdzie jest najbliższy schron?')
+
+    expect(await screen.findByText('Schron testowy')).toBeInTheDocument()
+    expect(screen.getByText('420 m od sprawdzanego miejsca')).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: /^Nawiguj w Google Maps/ })
+    expect(link).toHaveAttribute('target', '_blank')
+    const url = new URL(link.getAttribute('href')!)
+    expect(url.searchParams.get('destination')).toBe('50.05,19.94')
+    expect(url.searchParams.get('travelmode')).toBe('walking')
+    expect(screen.getByRole('link', { name: /Piwnica testowa, 900 m/ })).toBeInTheDocument()
+  })
+
+  it('shows no directions when the agent found no shelters', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(reply({ shelters: [] })))
+    render(<ChatView />)
+
+    await ask('Pytanie')
+
+    await screen.findByText('Brak ostrzeżeń dla tej okolicy.')
+    expect(screen.queryByRole('link', { name: /Google Maps/ })).not.toBeInTheDocument()
+  })
+
   it('shows a waiting message until the agent answers', async () => {
     let resolve: (value: Response) => void = () => {}
     fetchMock.mockReturnValueOnce(new Promise<Response>((r) => (resolve = r)))

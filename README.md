@@ -10,7 +10,7 @@ Built during **HackYeah 2026** — open task **SMART CITY**.
 
 ## Features
 
-- **Ask (chat)** — questions in plain Polish, e.g. "Czy na Kazimierzu grozi powódź?". The agent finds the place (or uses the device location), pulls current data and answers with the situation plus steps *before / during / after*, each with its source and update time.
+- **Ask (chat)** — questions in plain Polish, e.g. "Czy na Kazimierzu grozi powódź?". The agent finds the place (or uses the device location), pulls current data and answers with the situation plus steps *before / during / after*, each with its source and update time. When the answer names the nearest shelter, it comes with a "Nawiguj w Google Maps" walking-directions link.
 - **Life-threatening situations** — a sticky "Dzwoń 112" banner and steps taken straight from the official safety guide; emergency numbers are always visible.
 - **Map** — summary tiles (warnings, water levels, air quality, power outages), a Leaflet map of Kraków with outages and shelters, the nearest shelter with walking directions.
 - **Demo** — simulated flood, power outage and bomb threat scenarios for presentations, clearly marked with a SIMULATION banner (presentation instance only).

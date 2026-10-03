@@ -15,12 +15,22 @@ export type Source = {
   is_stale: boolean
 }
 
+export type ChatShelter = {
+  name: string
+  address: string
+  lat: number
+  lon: number
+  distance_m: number | null
+}
+
 // Shape of agent POST /chat (docs_ai/api-contract.md)
 export type ChatResponse = {
   session_id: string
   answer: string
   sections: Sections | null
   sources: Source[]
+  /** Nearest first; empty unless the agent looked shelters up. Optional for older agents. */
+  shelters?: ChatShelter[]
   emergency: boolean
   out_of_area: boolean
   off_topic: boolean

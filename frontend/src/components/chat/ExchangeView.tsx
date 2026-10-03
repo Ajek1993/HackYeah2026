@@ -3,6 +3,7 @@ import { looksLikeEmergency } from '../../lib/emergency'
 import { ActionPlan } from './ActionPlan'
 import { EmergencyBanner } from './EmergencyBanner'
 import { RichText } from './RichText'
+import { ShelterDirections } from './ShelterDirections'
 import { SourceList } from './SourceList'
 
 const ERROR_TEXT = {
@@ -81,6 +82,7 @@ export function ExchangeView({ exchange, locating = false, onRetry, retryDisable
           ) : (
             <RichText text={response.answer} />
           )}
+          <ShelterDirections shelters={response.shelters ?? []} />
           <SourceList sources={response.sources} />
           {response.disclaimer && (
             <p className="border-l-4 border-danger pl-4 text-base font-semibold text-danger">
