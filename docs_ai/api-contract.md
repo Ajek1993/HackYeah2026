@@ -254,6 +254,9 @@ Response:
   "sources": [
     { "name": "IMGW", "url": "...", "updated_at": "...", "is_stale": false }
   ],
+  "shelters": [
+    { "name": "...", "address": "...", "lat": 50.0, "lon": 19.9, "distance_m": 420 }
+  ],
   "emergency": false,
   "out_of_area": false,
   "off_topic": false,
@@ -262,6 +265,7 @@ Response:
 }
 ```
 - `sections` may be `null` (clarifying question, off-topic, out of area)
+- `shelters` lists what `find_nearest_shelter` returned in this turn, nearest first, so the frontend can link walking directions; empty otherwise and when out of area
 - Too many questions from one client → `429 {"detail": "Za dużo pytań naraz. Spróbuj ponownie za chwilę."}` (`CHAT_RATE_LIMIT_PER_MINUTE`, default 10)
 - `emergency: true` → frontend shows the "Dzwoń 112" banner
 - LLM error / timeout → `503 {"error": "agent_unavailable", "message": "Agent chwilowo niedostępny"}`

@@ -50,11 +50,21 @@ class SourceOut(BaseModel):
     is_stale: bool
 
 
+class ShelterOut(BaseModel):
+    name: str
+    address: str
+    lat: float
+    lon: float
+    distance_m: float | None = None
+
+
 class ChatResponse(BaseModel):
     session_id: str
     answer: str
     sections: Sections | None
     sources: list[SourceOut]
+    # From find_nearest_shelter, nearest first; the frontend links them to directions
+    shelters: list[ShelterOut] = []
     emergency: bool
     out_of_area: bool
     off_topic: bool
@@ -106,6 +116,19 @@ def _parse_final(content: str | None) -> dict[str, Any]:
     return {"answer": text}
 
 
+def _parse_shelters(payload: dict[str, Any]) -> list[ShelterOut]:
+    data = payload.get("data")
+    if not isinstance(data, list):
+        return []
+    shelters = []
+    for item in data:
+        try:
+            shelters.append(ShelterOut.model_validate(item))
+        except ValueError:
+            continue
+    return shelters
+
+
 def _parse_sections(raw: Any) -> Sections | None:
     if not isinstance(raw, dict):
         return None
@@ -153,6 +176,7 @@ class ChatService:
         messages.append(user_message)
         sources: dict[tuple[str, str | None], Source] = {}
         geocoded: list[dict[str, Any]] = []
+        shelters: list[ShelterOut] = []
         guide_loaded = False
 
         final = None
@@ -175,6 +199,8 @@ class ChatService:
                     sources[(source.name, source.updated_at)] = source
                 if call.function.name in ("geocode", "reverse_geocode") and result.payload:
                     geocoded.append(result.payload)
+                if call.function.name == "find_nearest_shelter" and result.payload:
+                    shelters = _parse_shelters(result.payload) or shelters
                 if call.function.name == "get_guide" and result.payload:
                     guide_loaded = guide_loaded or result.payload.get("data") is not None
                 messages.append(
@@ -188,7 +214,7 @@ class ChatService:
             final = await self._llm.complete(messages)
 
         parsed = _parse_final(final.content)
-        return self._respond(session_id, user_message, parsed, sources, guide_loaded)
+        return self._respond(session_id, user_message, parsed, sources, guide_loaded, shelters)
 
     def _respond(
         self,
@@ -197,12 +223,14 @@ class ChatService:
         parsed: dict[str, Any],
         sources: dict[tuple[str, str | None], Source],
         guide_loaded: bool,
+        shelters: list[ShelterOut] | None = None,
     ) -> ChatResponse:
         out_of_area = bool(parsed.get("out_of_area"))
         off_topic = bool(parsed.get("off_topic")) and not out_of_area
         emergency = bool(parsed.get("emergency"))
+        shelters = shelters or []
         if out_of_area:
-            answer, sections, sources = OUT_OF_AREA_MESSAGE, None, {}
+            answer, sections, sources, shelters = OUT_OF_AREA_MESSAGE, None, {}, []
         elif emergency and not guide_loaded:
             # Without the safety guide the model must not improvise life-saving steps.
             answer, sections = EMERGENCY_NO_GUIDE_MESSAGE, None
@@ -219,6 +247,7 @@ class ChatService:
                 SourceOut(name=s.name, url=s.url, updated_at=s.updated_at, is_stale=s.is_stale)
                 for s in sources.values()
             ],
+            shelters=shelters,
             emergency=emergency,
             out_of_area=out_of_area,
             off_topic=off_topic,
