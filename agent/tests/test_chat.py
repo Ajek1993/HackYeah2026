@@ -1,11 +1,13 @@
 import json
 import logging
+import re
+import time
 from types import SimpleNamespace
 
 import pytest
 
 from app.prompt import DISCLAIMER
-from app.session import SessionStore
+from app.session import SESSION_ID_PATTERN, SessionStore
 from app.tools import Source, ToolResult
 
 ADDRESS = "Testowa 1, Kraków"  # fictional address only (SPEC: Never)
@@ -42,7 +44,7 @@ class FakeLLM:
         self.responses = list(responses)
         self.calls: list[dict] = []
 
-    def complete(self, messages, tools=None):
+    async def complete(self, messages, tools=None):
         self.calls.append({"messages": [dict(m) for m in messages], "tools": tools})
         return self.responses.pop(0)
 
@@ -51,9 +53,11 @@ class FakeTools:
     def __init__(self, results: dict[str, ToolResult] | None = None):
         self.results = results or {}
         self.calls: list[tuple[str, str]] = []
+        self.locations: list = []
 
-    def execute(self, name, arguments):
+    async def execute(self, name, arguments, location=None):
         self.calls.append((name, arguments))
+        self.locations.append(location)
         return self.results.get(name, ToolResult(content='{"error": "Brak danych"}'))
 
 
@@ -62,8 +66,11 @@ def imgw_result(*, is_stale=False, is_simulated=False) -> ToolResult:
     return ToolResult(content='{"data": []}', sources=[source])
 
 
-def post(client, message, session_id="s-1"):
-    return client.post("/chat", json={"session_id": session_id, "message": message})
+def post(client, message, session_id=None):
+    payload = {"message": message}
+    if session_id:
+        payload["session_id"] = session_id
+    return client.post("/chat", json=payload)
 
 
 def test_answer_without_tools_has_contract_shape(make_client):
@@ -84,7 +91,7 @@ def test_answer_without_tools_has_contract_shape(make_client):
         "is_simulated",
         "disclaimer",
     }
-    assert body["session_id"] == "s-1"
+    assert re.fullmatch(SESSION_ID_PATTERN, body["session_id"])
     assert body["answer"] == "Cześć"
     assert body["disclaimer"] == DISCLAIMER
 
@@ -147,9 +154,10 @@ def test_second_question_in_session_sees_address_from_first(make_client):
     llm = FakeLLM(llm_message(final_json(answer="Jasne")), llm_message(final_json()))
     client = make_client(llm)
 
-    post(client, f"Mieszkam przy ulicy {ADDRESS}")
-    post(client, "A czy grozi mi zalanie?")
+    session_id = post(client, f"Mieszkam przy ulicy {ADDRESS}").json()["session_id"]
+    second_body = post(client, "A czy grozi mi zalanie?", session_id).json()
 
+    assert second_body["session_id"] == session_id
     second = llm.calls[1]["messages"]
     assert second[0]["role"] == "system"
     assert second[1] == {"role": "user", "content": f"Mieszkam przy ulicy {ADDRESS}"}
@@ -157,25 +165,52 @@ def test_second_question_in_session_sees_address_from_first(make_client):
     assert second[3] == {"role": "user", "content": "A czy grozi mi zalanie?"}
 
 
-def test_sessions_are_isolated(make_client):
+def test_question_without_session_starts_a_new_one(make_client):
     llm = FakeLLM(llm_message(final_json()), llm_message(final_json()))
     client = make_client(llm)
 
-    post(client, ADDRESS, session_id="a")
-    post(client, "Pytanie", session_id="b")
+    first = post(client, ADDRESS).json()["session_id"]
+    second = post(client, "Pytanie").json()["session_id"]
 
+    assert first != second
     assert len(llm.calls[1]["messages"]) == 2  # system + new question only
+
+
+def test_unknown_session_id_gets_a_fresh_server_issued_id(make_client):
+    # A client cannot pick an id (e.g. guess another user's) and read that context
+    llm = FakeLLM(llm_message(final_json()))
+    client = make_client(llm)
+
+    made_up = "x" * 32
+    body = post(client, "Pytanie", made_up).json()
+
+    assert body["session_id"] != made_up
+    assert len(llm.calls[0]["messages"]) == 2
+
+
+@pytest.mark.parametrize("session_id", ["short", "x" * 65, "bad id with spaces!"])
+def test_malformed_session_id_is_rejected(make_client, session_id):
+    client = make_client(FakeLLM())
+
+    response = client.post("/chat", json={"session_id": session_id, "message": "Pytanie"})
+
+    assert response.status_code == 422
 
 
 def test_delete_clears_session(make_client):
     llm = FakeLLM(llm_message(final_json()), llm_message(final_json()))
     client = make_client(llm)
 
-    post(client, ADDRESS)
-    assert client.delete("/chat/s-1").status_code == 204
-    post(client, "Pytanie")
+    session_id = post(client, ADDRESS).json()["session_id"]
+    assert client.delete(f"/chat/{session_id}").status_code == 204
+    body = post(client, "Pytanie", session_id).json()
 
+    assert body["session_id"] != session_id
     assert len(llm.calls[1]["messages"]) == 2
+
+
+def test_delete_rejects_malformed_session_id(make_client):
+    assert make_client(FakeLLM()).delete("/chat/bad id").status_code == 422
 
 
 def test_tool_budget_exhausted_forces_final_answer_without_tools(make_client):
@@ -230,9 +265,10 @@ def test_invalid_sections_are_dropped(make_client):
 @pytest.mark.parametrize(
     "payload",
     [
-        {"session_id": "s-1", "message": ""},
+        {"message": ""},
         {"session_id": "", "message": "Pytanie"},
-        {"session_id": "s-1", "message": "x" * 2001},
+        {"message": "x" * 2001},
+        {"message": "Pytanie", "unexpected": True},
     ],
 )
 def test_invalid_request_is_rejected(make_client, payload):
@@ -250,20 +286,86 @@ def test_chat_content_is_not_logged(make_client, caplog):
     assert ADDRESS not in caplog.text
 
 
+def test_tool_calls_per_round_are_capped(make_client):
+    calls = [tool_call("get_warnings", {}, f"call-{i}") for i in range(8)]
+    llm = FakeLLM(llm_message(tool_calls=calls), llm_message(final_json()))
+    tools = FakeTools()
+
+    post(make_client(llm, tools, max_tool_calls=6), "Pytanie")
+
+    assert len(tools.calls) == 6
+    tool_messages = [m for m in llm.calls[1]["messages"] if m["role"] == "tool"]
+    assert len(tool_messages) == 8  # every call gets an answer, the extra ones an error
+    assert "Too many tool calls" in tool_messages[-1]["content"]
+
+
+def test_deadline_forces_final_answer(make_client):
+    now = [0.0]
+
+    def clock():
+        now[0] += 30.0  # every check moves time by 30 s
+        return now[0]
+
+    llm = FakeLLM(
+        llm_message(tool_calls=[tool_call("get_warnings", {})]),
+        llm_message(final_json(answer="Na czas")),
+    )
+
+    body = post(make_client(llm, deadline_s=45, clock=clock), "Pytanie").json()
+
+    assert body["answer"] == "Na czas"
+    assert llm.calls[-1]["tools"] is None
+    assert len(llm.calls) == 2
+
+
+def test_chat_is_rate_limited_per_client(make_client):
+    from app.ratelimit import RateLimiter
+
+    llm = FakeLLM(*[llm_message(final_json()) for _ in range(3)])
+    client = make_client(llm, limiter=RateLimiter(2))
+
+    codes = [post(client, "Pytanie").status_code for _ in range(3)]
+
+    assert codes == [200, 200, 429]
+    assert "Za dużo pytań" in post(client, "Pytanie").json()["detail"]
+
+
 def test_session_store_expires_after_ttl():
     now = [0.0]
     sessions = SessionStore(ttl_seconds=10, max_messages=20, clock=lambda: now[0])
-    sessions.append("s", {"role": "user", "content": "a"})
+    session_id = sessions.resolve(None)
+    sessions.append(session_id, {"role": "user", "content": "a"})
 
     now[0] = 11.0
 
-    assert sessions.history("s") == []
+    assert sessions.resolve(session_id) != session_id
+    assert sessions.history(session_id) == []
 
 
 def test_session_store_keeps_only_recent_messages():
     sessions = SessionStore(ttl_seconds=10, max_messages=3, clock=lambda: 0.0)
+    session_id = sessions.resolve(None)
 
     for i in range(5):
-        sessions.append("s", {"role": "user", "content": str(i)})
+        sessions.append(session_id, {"role": "user", "content": str(i)})
 
-    assert [m["content"] for m in sessions.history("s")] == ["2", "3", "4"]
+    assert [m["content"] for m in sessions.history(session_id)] == ["2", "3", "4"]
+
+
+def test_session_store_caps_number_of_sessions():
+    sessions = SessionStore(ttl_seconds=60, max_messages=5, max_sessions=3, clock=time.monotonic)
+
+    ids = [sessions.resolve(None) for _ in range(5)]
+
+    assert len(sessions) == 3
+    assert sessions.resolve(ids[0]) != ids[0]  # oldest one was dropped
+    assert sessions.resolve(ids[-1]) == ids[-1]
+
+
+def test_session_ids_are_random_and_url_safe():
+    sessions = SessionStore(ttl_seconds=60, max_messages=5)
+
+    ids = {sessions.resolve(None) for _ in range(50)}
+
+    assert len(ids) == 50
+    assert all(re.fullmatch(SESSION_ID_PATTERN, i) for i in ids)

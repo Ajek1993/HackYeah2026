@@ -1,6 +1,6 @@
 from typing import Any
 
-from openai import OpenAI, OpenAIError
+from openai import AsyncOpenAI, OpenAIError
 from openai.types.chat import ChatCompletionMessage
 
 from app.config import settings
@@ -18,7 +18,7 @@ class GLMClient:
 
     def __init__(
         self,
-        client: OpenAI | None = None,
+        client: AsyncOpenAI | None = None,
         *,
         model: str | None = None,
         max_tokens: int | None = None,
@@ -29,11 +29,11 @@ class GLMClient:
         self.max_tokens = max_tokens or settings.glm_max_tokens
         self.temperature = settings.glm_temperature if temperature is None else temperature
 
-    def _get_client(self) -> OpenAI:
+    def _get_client(self) -> AsyncOpenAI:
         # Created lazily: the SDK raises when the API key is empty, which would break startup.
         if self._client is None:
             try:
-                self._client = OpenAI(
+                self._client = AsyncOpenAI(
                     api_key=settings.glm_api_key,
                     base_url=settings.glm_base_url,
                     timeout=settings.glm_timeout,
@@ -43,7 +43,7 @@ class GLMClient:
                 raise LLMUnavailableError("GLM client is not configured") from exc
         return self._client
 
-    def complete(
+    async def complete(
         self,
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
@@ -61,7 +61,7 @@ class GLMClient:
             params["tool_choice"] = "auto"
 
         try:
-            response = self._get_client().chat.completions.create(**params)
+            response = await self._get_client().chat.completions.create(**params)
         except OpenAIError as exc:
             raise LLMUnavailableError("GLM request failed") from exc
 
