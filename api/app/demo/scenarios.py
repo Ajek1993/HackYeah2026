@@ -35,6 +35,19 @@ LAGIEWNIKI = {
     "warning_level_cm": None,
     "alarm_level_cm": None,
 }
+# Riverside belt along the Wisła flooded in the flood scenario (GeoJSON: lon, lat)
+FLOOD_AREA = {
+    "type": "Polygon",
+    "coordinates": [
+        [
+            [20.049756, 50.052472],
+            [19.921345, 50.033034],
+            [19.928774, 50.058605],
+            [19.998903, 50.060131],
+            [20.049756, 50.052472],
+        ]
+    ],
+}
 CALM_AIR = {
     "provider": "gios",
     "station_id": "400",
@@ -75,7 +88,15 @@ def _air(now: datetime) -> Row:
 
 
 def _warning(
-    now: datetime, key: str, kind: str, severity: int, title: str, body: str, area: str, hours: int
+    now: datetime,
+    key: str,
+    kind: str,
+    severity: int,
+    title: str,
+    body: str,
+    area: str,
+    hours: int,
+    geometry: dict | None = None,
 ) -> Row:
     return {
         "warning_key": f"demo:{key}",
@@ -86,7 +107,7 @@ def _warning(
         "area_descriptions": [area],
         "valid_from": now - timedelta(hours=1),
         "valid_to": now + timedelta(hours=hours),
-        "geometry": None,
+        "geometry": geometry,
     }
 
 
@@ -118,6 +139,7 @@ def flood(now: datetime) -> ScenarioData:
                 "Podgórza i Nowej Huty.",
                 "małopolskie, zlewnia Wisły od ujścia Przemszy do ujścia Raby",
                 36,
+                geometry=FLOOD_AREA,
             ),
             _warning(
                 now,
