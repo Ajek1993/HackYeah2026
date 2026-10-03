@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
-
-echo "=== Running tests ==="
-pytest tests/ -v --tb=short
-echo "=== Tests passed ==="
-
+if [ "$APP_ENV" != "production" ]; then
+    echo "=== Running tests ==="
+    pytest tests/ -v --tb=short
+    echo "=== Tests passed ==="
+fi
 exec "$@"
