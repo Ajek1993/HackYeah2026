@@ -28,7 +28,7 @@ export type ChatResponse = {
   disclaimer: string | null
 }
 
-export type ChatErrorKind = 'unavailable' | 'network'
+export type ChatErrorKind = 'unavailable' | 'network' | 'rate_limited'
 
 export class ChatError extends Error {
   readonly kind: ChatErrorKind
@@ -39,8 +39,9 @@ export class ChatError extends Error {
   }
 }
 
+/** `sessionId` is null for the first question; the agent issues one in its answer. */
 export async function sendMessage(
-  sessionId: string,
+  sessionId: string | null,
   message: string,
   location: DeviceLocation | null,
   signal?: AbortSignal,
@@ -50,13 +51,14 @@ export async function sendMessage(
     response = await fetch(`${config.agentUrl}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, message, location }),
+      body: JSON.stringify({ ...(sessionId ? { session_id: sessionId } : {}), message, location }),
       signal,
     })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error
     throw new ChatError('network')
   }
+  if (response.status === 429) throw new ChatError('rate_limited')
   if (!response.ok) throw new ChatError('unavailable')
   return (await response.json()) as ChatResponse
 }

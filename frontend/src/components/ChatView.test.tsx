@@ -81,8 +81,8 @@ describe('ChatView', () => {
     expect(screen.queryByText(/Sprawdzam ostrzeżenia/)).not.toBeInTheDocument()
   })
 
-  it('reuses one session id for the whole conversation', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(reply()))
+  it('starts without a session and then uses the id issued by the agent', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(reply({ session_id: 'issued-by-agent-123' })))
     render(<ChatView />)
 
     await ask('Mieszkam przy Testowej 1')
@@ -91,8 +91,45 @@ describe('ChatView', () => {
     await vi.waitFor(() => expect(postedBodies()).toHaveLength(2))
 
     const [first, second] = postedBodies()
-    expect(first.session_id).toBeTruthy()
-    expect(second.session_id).toBe(first.session_id)
+    expect(first).not.toHaveProperty('session_id')
+    expect(second.session_id).toBe('issued-by-agent-123')
+  })
+
+  it('shows a rate limit message when asking too often', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'Za dużo' }, 429))
+    render(<ChatView />)
+
+    await ask('Pytanie')
+
+    expect(await screen.findByText(/Za dużo pytań naraz/)).toBeInTheDocument()
+  })
+
+  it('shows each question as a heading for screen reader navigation', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(reply()))
+    render(<ChatView />)
+
+    await ask('Czy grozi zalanie?')
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: /Czy grozi zalanie\?/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('links a source only when its address is https', async () => {
+    const sources = [
+      { name: 'IMGW', url: 'https://danepubliczne.imgw.pl/', updated_at: null, is_stale: false },
+      { name: 'Podejrzane', url: 'data:text/html,<b>x</b>', updated_at: null, is_stale: false },
+      { name: 'Bez TLS', url: 'http://example.test', updated_at: null, is_stale: false },
+    ]
+    fetchMock.mockResolvedValueOnce(jsonResponse(reply({ sources })))
+    render(<ChatView />)
+
+    await ask('Pytanie')
+
+    expect(await screen.findByRole('link', { name: 'IMGW' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Podejrzane' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Bez TLS' })).not.toBeInTheDocument()
+    expect(screen.getByText('Podejrzane')).toBeInTheDocument()
   })
 
   it('renders before / during / after steps when the agent returns sections', async () => {
@@ -160,23 +197,22 @@ describe('ChatView', () => {
     expect(await screen.findByText(/Brak połączenia z KryzIO/)).toBeInTheDocument()
   })
 
-  it('starts a new conversation with a new session and clears the old one', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(reply()))
+  it('starts a new conversation and clears the old session in the agent', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(reply({ session_id: 'first-session-abc' })))
     render(<ChatView />)
 
     await ask('Pierwsze pytanie')
     await screen.findByText('Brak ostrzeżeń dla tej okolicy.')
-    const firstSession = postedBodies()[0].session_id
 
     await userEvent.click(screen.getByRole('button', { name: 'Nowa rozmowa' }))
 
     expect(screen.queryByText('Pierwsze pytanie')).not.toBeInTheDocument()
     const deleteCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE')
-    expect(deleteCall?.[0]).toContain(`/chat/${firstSession}`)
+    expect(deleteCall?.[0]).toContain('/chat/first-session-abc')
 
     await ask('Drugie pytanie')
     await vi.waitFor(() => expect(postedBodies()).toHaveLength(2))
-    expect(postedBodies()[1].session_id).not.toBe(firstSession)
+    expect(postedBodies()[1]).not.toHaveProperty('session_id')
   })
 
   it('renders answer markdown without injecting HTML', async () => {

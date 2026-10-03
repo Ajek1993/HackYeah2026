@@ -8,6 +8,7 @@ import { SourceList } from './SourceList'
 const ERROR_TEXT = {
   unavailable: 'Agent chwilowo niedostępny.',
   network: 'Brak połączenia z KryzIO. Sprawdź internet i spróbuj ponownie.',
+  rate_limited: 'Za dużo pytań naraz. Spróbuj ponownie za chwilę.',
 }
 
 type Props = {
@@ -24,10 +25,10 @@ export function ExchangeView({ exchange, locating = false, onRetry, retryDisable
 
   return (
     <article aria-label={`Pytanie: ${question}`} className="flex flex-col gap-4">
-      <p className="self-start rounded-lg bg-vistula-soft px-4 py-3 font-semibold text-vistula-deep">
+      <h2 className="self-start rounded-lg bg-vistula-soft px-4 py-3 text-lg font-semibold text-vistula-deep">
         <span className="sr-only">Twoje pytanie: </span>
         {question}
-      </p>
+      </h2>
 
       {emergency && <EmergencyBanner />}
 

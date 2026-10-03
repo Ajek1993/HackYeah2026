@@ -7,7 +7,6 @@ import {
   type ChatResponse,
 } from '../api/chat'
 import { requestLocation, type DeviceLocation, type LocationStatus } from '../lib/geolocation'
-import { newSessionId } from '../lib/session'
 
 export type Exchange = {
   id: number
@@ -19,7 +18,8 @@ export type Exchange = {
 
 export function useChat() {
   const [exchanges, setExchanges] = useState<Exchange[]>([])
-  const sessionId = useRef(newSessionId())
+  // Issued by the agent with the first answer; kept in page memory only (reload = new context)
+  const sessionId = useRef<string | null>(null)
   const nextId = useRef(1)
   const controller = useRef<AbortController | null>(null)
   // Device location lives only in page memory and is asked for once, with the first question.
@@ -51,6 +51,7 @@ export function useChat() {
         location.current,
         abort.signal,
       )
+      sessionId.current = response.session_id
       update({ status: 'done', response, error: undefined })
     } catch (error) {
       if (abort.signal.aborted) return
@@ -84,8 +85,8 @@ export function useChat() {
 
   const reset = useCallback(() => {
     controller.current?.abort()
-    void clearSession(sessionId.current)
-    sessionId.current = newSessionId()
+    if (sessionId.current) void clearSession(sessionId.current)
+    sessionId.current = null
     setExchanges([])
   }, [])
 

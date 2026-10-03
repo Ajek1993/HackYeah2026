@@ -1,6 +1,16 @@
 import type { Source } from '../../api/chat'
 import { formatUpdatedAt, hoursSince } from '../../lib/time'
 
+// Only https links are rendered: source URLs come from the backend and the model's context
+function isHttps(url: string | null): boolean {
+  if (!url) return false
+  try {
+    return new URL(url).protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 export function SourceList({ sources }: { sources: Source[] }) {
   if (!sources.length) return null
 
@@ -11,9 +21,9 @@ export function SourceList({ sources }: { sources: Source[] }) {
         {sources.map((source) => {
           const updated = formatUpdatedAt(source.updated_at)
           const age = hoursSince(source.updated_at)
-          const name = source.url ? (
+          const name = isHttps(source.url) ? (
             <a
-              href={source.url}
+              href={source.url!}
               target="_blank"
               rel="noreferrer"
               className="font-semibold text-vistula underline underline-offset-2 hover:text-vistula-deep"
