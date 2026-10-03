@@ -108,8 +108,9 @@
 
 ## Faza 4 — Demo
 
-### T21 — Scenariusze symulowane w `api` · `todo` · [B]
+### T21 — Scenariusze symulowane w `api` · `review` · [B → zrobione przez Claude na prośbę autora]
 - `api/app/demo/`: powódź, brak prądu, atak bombowy; aktywny scenariusz podmienia odpowiedzi endpointów (`is_simulated=true`); endpointy demo → 404 gdy `DEMO_MODE=false`
+- X5: przełączanie wymaga `X-Demo-Token` (`DEMO_ADMIN_TOKEN`), scenariusz wygasa po `DEMO_TTL_MINUTES`; schrony i poradnik zostają prawdziwe
 - **Gotowe gdy:** testy: aktywacja scenariusza zmienia `/warnings`; przy fladze false → 404
 
 ### T22 — Zakładka Demo we froncie · `todo` · [A]

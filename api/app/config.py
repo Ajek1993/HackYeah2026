@@ -10,6 +10,10 @@ class Settings:
         self.database_url = os.getenv("DATABASE_URL", "")
         self.cors_origins = _csv(os.getenv("CORS_ORIGINS", "http://localhost:5173"))
         self.demo_mode = os.getenv("DEMO_MODE", "false").lower() == "true"
+        # Required to switch scenarios; empty means nobody can (audit X5)
+        self.demo_admin_token = os.getenv("DEMO_ADMIN_TOKEN", "")
+        # An active scenario switches back to real data after this time
+        self.demo_ttl_minutes = int(os.getenv("DEMO_TTL_MINUTES", "30"))
         self.celery_broker_url = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
         self.celery_result_backend = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
         self.shelters_csv_url = os.getenv(

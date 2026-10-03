@@ -80,7 +80,8 @@ def warning(row: dict) -> dict[str, Any]:
     areas = [a.strip() for a in row.get("area_descriptions") or [] if a and a.strip()]
     return {
         "id": row["warning_key"],
-        "kind": warning_kind(row["title"]),
+        # Demo scenarios set the kind explicitly (e.g. bomb_threat, absent from IMGW titles)
+        "kind": row.get("kind") or warning_kind(row["title"]),
         "level": warning_level(row.get("severity")),
         "title": row["title"],
         "description": row.get("body") or "",

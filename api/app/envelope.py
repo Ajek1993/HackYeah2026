@@ -24,18 +24,20 @@ def envelope(
     data: Any,
     now: datetime | None = None,
     static: bool = False,
+    simulated: bool = False,
 ) -> dict[str, Any]:
     """Common wrapper for every data reading (docs_ai/api-contract.md).
 
     `updated_at` is when KryzIO last fetched the source; `data` is None when the
     source has never been fetched ("Brak danych"). `static` marks reference
-    material (the safety guide) that never goes stale.
+    material (the safety guide) that never goes stale; `simulated` marks data
+    from an active demo scenario, labelled as such in `source`.
     """
     return {
-        "source": source,
+        "source": f"{source} (symulacja)" if simulated else source,
         "source_url": source_url,
         "updated_at": iso(updated_at),
         "is_stale": False if static else is_stale(updated_at, now),
-        "is_simulated": False,
+        "is_simulated": simulated,
         "data": data if updated_at is not None or static else None,
     }
