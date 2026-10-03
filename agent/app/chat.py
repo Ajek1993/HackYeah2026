@@ -9,15 +9,23 @@ from app.prompt import (
     DISCLAIMER,
     EMERGENCY_NO_GUIDE_MESSAGE,
     OUT_OF_AREA_MESSAGE,
+    build_location_note,
     build_system_prompt,
 )
 from app.session import SessionStore
 from app.tools import TOOL_DEFINITIONS, Source, ToolExecutor
 
 
+class Location(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    accuracy_m: float | None = Field(default=None, ge=0)
+
+
 class ChatRequest(BaseModel):
     session_id: str = Field(min_length=1, max_length=100)
     message: str = Field(min_length=1, max_length=2000)
+    location: Location | None = None
 
 
 class Sections(BaseModel):
@@ -102,8 +110,14 @@ class ChatService:
         messages = [
             {"role": "system", "content": build_system_prompt()},
             *self._sessions.history(request.session_id),
-            user_message,
         ]
+        if request.location:
+            # Sent with every request, never stored in the session: device location is sensitive.
+            loc = request.location
+            messages.append(
+                {"role": "system", "content": build_location_note(loc.lat, loc.lon, loc.accuracy_m)}
+            )
+        messages.append(user_message)
         sources: dict[tuple[str, str | None], Source] = {}
         geocoded: list[dict[str, Any]] = []
         guide_loaded = False
@@ -119,7 +133,7 @@ class ChatService:
                 result = self._tools.execute(call.function.name, call.function.arguments)
                 for source in result.sources:
                     sources[(source.name, source.updated_at)] = source
-                if call.function.name == "geocode" and result.payload:
+                if call.function.name in ("geocode", "reverse_geocode") and result.payload:
                     geocoded.append(result.payload)
                 if call.function.name == "get_guide" and result.payload:
                     guide_loaded = guide_loaded or result.payload.get("data") is not None

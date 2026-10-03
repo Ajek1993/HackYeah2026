@@ -58,6 +58,22 @@ Endpoints aggregating several sources return a list of envelopes.
 - Not found → `200` with `found: false`, other fields `null`
 - Outside Kraków → `in_krakow: false`
 
+### `GET /reverse?lat=&lon=`
+Reverse geocoding of the user's device location (Nominatim reverse). Same shape as `/geocode`, `query` is `null`.
+```json
+{
+  "query": null,
+  "found": true,
+  "lat": 50.0312,
+  "lon": 19.9204,
+  "display_name": "Kobierzyńska, Dębniki, Kraków",
+  "district": "Dębniki",
+  "in_krakow": true
+}
+```
+- Not found → `200` with `found: false`
+- Coordinates are personal data: never logged (also not in access logs)
+
 ### `GET /warnings?lat=&lon=`
 Active meteorological and hydrological warnings relevant to the point (or all of Kraków when no coordinates).
 ```json
@@ -196,8 +212,14 @@ Data for the map tab tiles — one request, all sources.
 ### `POST /chat`
 Request:
 ```json
-{ "session_id": "uuid-from-frontend", "message": "Czy na Kobierzyńskiej grozi zalanie?" }
+{
+  "session_id": "uuid-from-frontend",
+  "message": "Czy grozi mi zalanie?",
+  "location": { "lat": 50.0312, "lon": 19.9204, "accuracy_m": 25 }
+}
 ```
+- `location` optional (`null` when the user denied it); sent with every request, never stored in the session
+- A place named in `message` takes precedence over `location`
 Response:
 ```json
 {

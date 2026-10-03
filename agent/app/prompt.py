@@ -56,7 +56,10 @@ the guide and other data together.
 the `geocode` tool.
 - If the place is outside Kraków (`in_krakow: false`), answer exactly "{out_of_area}" \
 and nothing else; set `out_of_area` to true.
-- If the question has no place and the answer depends on it, ask for the street or district.
+- If the question has no place and the answer depends on it, use the user's device location \
+when it is provided (see the location note): call `reverse_geocode` with those coordinates and \
+apply the same Kraków rule. Without a device location, ask for the street or district.
+- Never show raw coordinates to the user; refer to "Twoja okolica" or the district name.
 - If the geocoder does not know the place, ask the user to clarify the address.
 - Remember the address and household (children, senior, pets, disabilities) mentioned earlier \
 in this conversation and adapt the steps to them.
@@ -100,6 +103,16 @@ After you have finished calling tools, reply with a single JSON object and nothi
 }}
 - `sections` is null for clarifying questions, off-topic and out-of-area answers.
 """
+
+
+def build_location_note(lat: float, lon: float, accuracy_m: float | None = None) -> str:
+    accuracy = f", accuracy about {round(accuracy_m)} m" if accuracy_m is not None else ""
+    return (
+        f"The user shared the device location: lat {lat:.5f}, lon {lon:.5f}{accuracy}. "
+        "If the question names any place (street, district, landmark, e.g. 'Rynek Główny'), "
+        "the named place always takes precedence: geocode it and ignore this location. "
+        "Use this location only when the question names no place."
+    )
 
 
 def build_system_prompt(now: datetime | None = None) -> str:

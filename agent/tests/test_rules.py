@@ -175,3 +175,72 @@ def test_failed_question_is_not_stored_in_session(make_client):
     post(make_client(failing_llm(), sessions=sessions), "Pytanie")
 
     assert sessions.history("s-1") == []
+
+
+LOCATION = {"lat": 50.03123, "lon": 19.92045, "accuracy_m": 25}
+
+
+def post_with_location(client, message, location=LOCATION):
+    payload = {"session_id": "s-1", "message": message, "location": location}
+    return client.post("/chat", json=payload)
+
+
+def test_device_location_is_passed_to_model_as_system_note(make_client):
+    llm = FakeLLM(llm_message(final_json()))
+
+    post_with_location(make_client(llm), "Czy grozi mi zalanie?")
+
+    messages = llm.calls[0]["messages"]
+    note = messages[-2]
+    assert note["role"] == "system"
+    assert "lat 50.03123, lon 19.92045" in note["content"]
+    assert "accuracy about 25 m" in note["content"]
+    assert messages[-1] == {"role": "user", "content": "Czy grozi mi zalanie?"}
+
+
+def test_device_location_is_not_stored_in_session(make_client):
+    sessions = SessionStore(ttl_seconds=60, max_messages=20)
+    llm = FakeLLM(llm_message(final_json()), llm_message(final_json()))
+    client = make_client(llm, sessions=sessions)
+
+    post_with_location(client, "Pierwsze")
+    post(client, "Drugie bez lokalizacji")
+
+    assert all("50.03123" not in str(m["content"]) for m in sessions.history("s-1"))
+    assert all("50.03123" not in str(m["content"]) for m in llm.calls[1]["messages"])
+
+
+def test_request_without_location_has_no_location_note(make_client):
+    llm = FakeLLM(llm_message(final_json()))
+
+    post(make_client(llm), "Pytanie")
+
+    assert [m["role"] for m in llm.calls[0]["messages"]] == ["system", "user"]
+
+
+def test_device_location_outside_krakow_returns_fixed_message(make_client):
+    llm = FakeLLM(
+        llm_message(tool_calls=[tool_call("reverse_geocode", {"lat": 49.97, "lon": 19.83})])
+    )
+    tools = FakeTools({"reverse_geocode": geocode_result(in_krakow=False)})
+
+    body = post_with_location(
+        make_client(llm, tools), "Czy grozi mi zalanie?", {"lat": 49.97, "lon": 19.83}
+    ).json()
+
+    assert body["answer"] == OUT_OF_AREA_MESSAGE
+    assert body["out_of_area"] is True
+    assert len(llm.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "location",
+    [
+        {"lat": 91, "lon": 19.9},
+        {"lat": 50, "lon": -181},
+        {"lat": 50},
+        {"lat": 50, "lon": 19.9, "accuracy_m": -1},
+    ],
+)
+def test_invalid_location_is_rejected(make_client, location):
+    assert post_with_location(make_client(FakeLLM()), "Pytanie", location).status_code == 422

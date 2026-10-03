@@ -10,8 +10,8 @@ from app.prompt import NO_DATA_MESSAGE
 
 GUIDE_TOPICS = ["flood", "power_outage", "bomb_threat", "fire", "drought", "air_quality", "general"]
 
-_LAT = {"type": "number", "description": "Latitude (WGS84) from the geocode tool"}
-_LON = {"type": "number", "description": "Longitude (WGS84) from the geocode tool"}
+_LAT = {"type": "number", "description": "Latitude (WGS84), from geocode or the device location"}
+_LON = {"type": "number", "description": "Longitude (WGS84), from geocode or the device location"}
 
 
 def _function(name: str, description: str, properties: dict, required: list[str]) -> dict:
@@ -32,6 +32,13 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         "Always call it before answering about a specific place.",
         {"query": {"type": "string", "description": "Place name, e.g. 'Kobierzyńska 1, Kraków'"}},
         ["query"],
+    ),
+    _function(
+        "reverse_geocode",
+        "Resolve coordinates (e.g. the user's device location) to a street and district. "
+        "Returns `found` and `in_krakow`. Use it when the question names no place.",
+        {"lat": _LAT, "lon": _LON},
+        ["lat", "lon"],
     ),
     _function(
         "get_warnings",
@@ -143,6 +150,9 @@ class ToolExecutor:
     def _handlers(self) -> dict:
         return {
             "geocode": lambda a: self._get("/geocode", {"q": a["query"]}),
+            "reverse_geocode": lambda a: self._get(
+                "/reverse", {"lat": float(a["lat"]), "lon": float(a["lon"])}
+            ),
             "get_warnings": lambda a: self._get("/warnings", _point(a)),
             "get_water_levels": lambda a: self._get("/water-levels"),
             "get_air_quality": lambda a: self._get("/air-quality", _point(a)),

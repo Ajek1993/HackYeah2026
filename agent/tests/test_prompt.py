@@ -4,6 +4,7 @@ from app.prompt import (
     DISCLAIMER,
     NO_DATA_MESSAGE,
     OUT_OF_AREA_MESSAGE,
+    build_location_note,
     build_system_prompt,
 )
 
@@ -70,3 +71,19 @@ def test_prompt_requires_polish_answers():
 def test_prompt_contains_current_time_in_krakow():
     # 08:30 UTC is 10:30 in Kraków (CEST)
     assert "2026-10-04 10:30" in build_system_prompt(FIXED_NOW)
+
+
+def test_prompt_uses_device_location_when_question_has_no_place():
+    prompt = build_system_prompt(FIXED_NOW)
+
+    assert "reverse_geocode" in prompt
+    assert "Never show raw coordinates" in prompt
+
+
+def test_location_note_contains_rounded_coordinates_and_precedence_rule():
+    note = build_location_note(50.0312345, 19.9204567, 24.6)
+
+    assert "lat 50.03123, lon 19.92046" in note
+    assert "accuracy about 25 m" in note
+    assert "always takes precedence" in note
+    assert "accuracy" not in build_location_note(50.0, 19.9)

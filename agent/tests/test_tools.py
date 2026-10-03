@@ -42,6 +42,7 @@ def test_tool_definitions_cover_all_agent_tools():
 
     assert names == {
         "geocode",
+        "reverse_geocode",
         "get_warnings",
         "get_water_levels",
         "get_air_quality",
@@ -88,6 +89,7 @@ def test_warnings_without_point_queries_whole_city():
     ("name", "args", "path"),
     [
         ("get_water_levels", {}, "/water-levels"),
+        ("reverse_geocode", {"lat": 50.06, "lon": 19.94}, "/reverse"),
         ("get_air_quality", {"lat": 50.06, "lon": 19.94}, "/air-quality"),
         ("get_power_outages", {"lat": 50.06, "lon": 19.94}, "/power-outages"),
         ("find_nearest_shelter", {"lat": 50.06, "lon": 19.94}, "/shelters/nearest"),
