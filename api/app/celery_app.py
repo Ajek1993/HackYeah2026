@@ -1,5 +1,4 @@
 from celery import Celery
-from celery.schedules import crontab
 
 from app.config import settings
 
@@ -11,6 +10,9 @@ app = Celery(
         "app.sources.shelters",
         "app.sources.tauron",
         "app.sources.imgw",
+        "app.sources.boundary",
+        "app.sources.gios",
+        "app.sources.airly",
     ],
 )
 
@@ -42,5 +44,17 @@ app.conf.beat_schedule = {
         "task": "app.sources.imgw.fetch_imgw_warnings",
         "schedule": 2700.0,
     },
+    "fetch-krakow-boundary-weekly": {
+        "task": "app.sources.boundary.fetch_krakow_boundary",
+        "schedule": 7 * 24 * 3600.0,
+    },
+    "fetch-gios-air-quality-hourly": {
+        "task": "app.sources.gios.fetch_gios_air_quality",
+        "schedule": 3600.0,
+    },
+    # Airly rate limit: never more often than every 2h (SPEC)
+    "fetch-airly-air-quality-every-2h": {
+        "task": "app.sources.airly.fetch_airly_air_quality",
+        "schedule": 7200.0,
+    },
 }
-
