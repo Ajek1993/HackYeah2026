@@ -31,5 +31,7 @@ Thumbs.db
 # Local data
 *.sqlite3
 pgdata/
+celerybeat-schedule
+celerybeat-schedule.db
 
 /docs
