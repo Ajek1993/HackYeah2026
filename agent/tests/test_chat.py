@@ -256,6 +256,30 @@ def test_plain_text_answer_falls_back_to_answer_field(make_client):
     assert body["sections"] is None
 
 
+def test_prose_followed_by_json_without_answer_hides_json(make_client):
+    trailing = json.dumps(
+        {
+            "sections": {"situation": "Brak prądu", "during": ["Nie otwieraj lodówki"]},
+            "emergency": False,
+            "out_of_area": False,
+            "off_topic": False,
+        },
+        ensure_ascii=False,
+    )
+    llm = FakeLLM(llm_message("Ogranicz otwieranie lodówki.\n\nDzwoń 112." + trailing))
+
+    body = post(make_client(llm), "Leki w lodówce bez prądu").json()
+
+    assert body["answer"] == "Ogranicz otwieranie lodówki.\n\nDzwoń 112."
+    assert body["sections"]["during"] == ["Nie otwieraj lodówki"]
+
+
+def test_brace_in_prose_before_json_is_skipped(make_client):
+    llm = FakeLLM(llm_message("Uwaga {ważne}\n" + final_json(answer="Z JSON")))
+
+    assert post(make_client(llm), "Pytanie").json()["answer"] == "Z JSON"
+
+
 def test_invalid_sections_are_dropped(make_client):
     llm = FakeLLM(llm_message(final_json(sections={"before": "not a list"})))
 
