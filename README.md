@@ -23,7 +23,24 @@ Deployment: `frontend` on Vercel, `api` + `agent` + `db` via Docker Compose on a
 
 ## Getting started
 
-_Coming soon_ — `make up`, `make test`.
+Requirements: Docker with Compose v2, Make.
+
+```bash
+make up          # creates .env from .env.example if missing, builds and starts all containers
+make test        # api + agent (pytest) and frontend (vitest)
+make lint        # ruff + oxlint
+make down
+```
+
+Fill in `GLM_API_KEY` and `AIRLY_API_KEY` in `.env`.
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| API | http://localhost:8000/health |
+| Agent | http://localhost:8001/health |
+
+The Demo tab (simulated scenarios) is visible only with `VITE_DEMO_MODE=true` and is meant for presentations only.
 
 ## Data sources
 
