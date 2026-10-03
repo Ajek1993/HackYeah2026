@@ -55,7 +55,7 @@ def fetch_shelters(self):
         resp.raise_for_status()
     except requests.RequestException as exc:
         logger.error("Failed to download shelters CSV: %s", exc)
-        raise self.retry(countdown=300, exc=exc)
+        raise self.retry(countdown=300, exc=exc) from exc
 
     rows = _parse_csv(resp.content)
     if not rows:
@@ -77,7 +77,8 @@ def fetch_shelters(self):
                              gmina, powiat, wojewodztwo, availability,
                              geom, row_hash, last_seen_at, is_active)
                         VALUES
-                            (%(shelter_id)s, %(name)s, %(object_type)s, %(description)s, %(address)s,
+                            (%(shelter_id)s, %(name)s, %(object_type)s, %(description)s,
+                             %(address)s,
                              %(gmina)s, %(powiat)s, %(wojewodztwo)s, %(availability)s,
                              ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326),
                              %(row_hash)s, %(run_ts)s, true)

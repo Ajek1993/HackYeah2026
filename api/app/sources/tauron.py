@@ -1,7 +1,7 @@
 import hashlib
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import requests
 
@@ -82,21 +82,19 @@ def _build_center_wkt(item: dict) -> str | None:
 
 @app.task(name="app.sources.tauron.fetch_tauron_outages", bind=True, max_retries=2)
 def fetch_tauron_outages(self):
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     params = {
         "fromDate": now_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
         "toDate": (now_utc + timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
     }
 
     try:
-        resp = requests.get(
-            settings.tauron_api_url, params=params, headers=HEADERS, timeout=30
-        )
+        resp = requests.get(settings.tauron_api_url, params=params, headers=HEADERS, timeout=30)
         resp.raise_for_status()
         items = resp.json()
     except requests.RequestException as exc:
         logger.error("Failed to fetch Tauron outages: %s", exc)
-        raise self.retry(countdown=120, exc=exc)
+        raise self.retry(countdown=120, exc=exc) from exc
 
     krakow_items = [it for it in items if _is_in_krakow(it)]
 
@@ -169,7 +167,9 @@ def fetch_tauron_outages(self):
 
         logger.info(
             "Tauron: %d total items, %d in Kraków, %d deactivated",
-            len(items), len(krakow_items), deactivated,
+            len(items),
+            len(krakow_items),
+            deactivated,
         )
         return {
             "status": "ok",

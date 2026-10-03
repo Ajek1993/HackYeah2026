@@ -22,6 +22,7 @@ def _json_hash(obj: dict) -> str:
 # Hydro stations
 # ---------------------------------------------------------------------------
 
+
 @app.task(name="app.sources.imgw.fetch_imgw_hydro", bind=True, max_retries=2)
 def fetch_imgw_hydro(self):
     try:
@@ -30,7 +31,7 @@ def fetch_imgw_hydro(self):
         stations = resp.json()
     except requests.RequestException as exc:
         logger.error("Failed to fetch IMGW hydro: %s", exc)
-        raise self.retry(countdown=300, exc=exc)
+        raise self.retry(countdown=300, exc=exc) from exc
 
     if not isinstance(stations, list):
         logger.warning("IMGW hydro returned non-list: %s", type(stations))
@@ -119,7 +120,8 @@ def fetch_imgw_hydro(self):
                     count += 1
 
                 cur.execute(
-                    "UPDATE hydro_stations SET is_active = false WHERE last_seen_at < %s AND is_active",
+                    "UPDATE hydro_stations SET is_active = false"
+                    " WHERE last_seen_at < %s AND is_active",
                     (run_ts,),
                 )
                 deactivated = cur.rowcount
@@ -133,6 +135,7 @@ def fetch_imgw_hydro(self):
 # ---------------------------------------------------------------------------
 # Warnings (hydro + meteo)
 # ---------------------------------------------------------------------------
+
 
 def _hydro_warning_key(item: dict) -> str:
     biuro = item.get("biuro", "")

@@ -1,5 +1,4 @@
-import json
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
@@ -14,7 +13,6 @@ from app.sources.imgw import (
     fetch_imgw_hydro,
     fetch_imgw_warnings,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -123,6 +121,7 @@ METEO_WARNING = {
 # _json_hash
 # ---------------------------------------------------------------------------
 
+
 class TestJsonHash:
     def test_deterministic(self):
         assert _json_hash({"a": 1}) == _json_hash({"a": 1})
@@ -137,6 +136,7 @@ class TestJsonHash:
 # ---------------------------------------------------------------------------
 # _hydro_warning_key
 # ---------------------------------------------------------------------------
+
 
 class TestHydroWarningKey:
     def test_format(self):
@@ -164,6 +164,7 @@ class TestHydroWarningKey:
 # ---------------------------------------------------------------------------
 # _flatten helpers
 # ---------------------------------------------------------------------------
+
 
 class TestFlattenAreaCodes:
     def test_flattens_all_codes(self):
@@ -209,6 +210,7 @@ class TestFlattenAreaDescriptions:
 # ---------------------------------------------------------------------------
 # fetch_imgw_hydro task
 # ---------------------------------------------------------------------------
+
 
 class TestFetchImgwHydro:
     def _mock_db(self, mock_conn):
@@ -292,7 +294,7 @@ class TestFetchImgwHydro:
     def test_http_error_retries(self, mock_get):
         mock_get.side_effect = requests.ConnectionError("timeout")
 
-        with pytest.raises(Exception):
+        with pytest.raises(requests.ConnectionError):
             fetch_imgw_hydro.apply().get(timeout=10)
 
     @patch("app.sources.imgw.get_conn")
@@ -340,6 +342,7 @@ class TestFetchImgwHydro:
 # ---------------------------------------------------------------------------
 # fetch_imgw_warnings task
 # ---------------------------------------------------------------------------
+
 
 class TestFetchImgwWarnings:
     def _mock_db(self, mock_conn):
@@ -470,6 +473,7 @@ class TestFetchImgwWarnings:
 # _upsert_warnings — unit tests for field mapping
 # ---------------------------------------------------------------------------
 
+
 class TestUpsertWarningsMapping:
     def test_hydro_warning_fields(self):
         mock_cur = MagicMock()
@@ -576,9 +580,11 @@ class TestUpsertWarningsMapping:
 # Celery beat schedule config
 # ---------------------------------------------------------------------------
 
+
 class TestCeleryConfig:
     def test_beat_schedule_exists(self):
         from app.celery_app import app as celery_app
+
         schedule = celery_app.conf.beat_schedule
         assert "fetch-shelters-every-2h" in schedule
         assert "fetch-tauron-every-30min" in schedule
@@ -587,16 +593,22 @@ class TestCeleryConfig:
 
     def test_shelters_interval_is_2h(self):
         from app.celery_app import app as celery_app
+
         assert celery_app.conf.beat_schedule["fetch-shelters-every-2h"]["schedule"] == 7200.0
 
     def test_tauron_interval_is_30min(self):
         from app.celery_app import app as celery_app
+
         assert celery_app.conf.beat_schedule["fetch-tauron-every-30min"]["schedule"] == 1800.0
 
     def test_imgw_hydro_interval_is_45min(self):
         from app.celery_app import app as celery_app
+
         assert celery_app.conf.beat_schedule["fetch-imgw-hydro-every-45min"]["schedule"] == 2700.0
 
     def test_imgw_warnings_interval_is_45min(self):
         from app.celery_app import app as celery_app
-        assert celery_app.conf.beat_schedule["fetch-imgw-warnings-every-45min"]["schedule"] == 2700.0
+
+        assert (
+            celery_app.conf.beat_schedule["fetch-imgw-warnings-every-45min"]["schedule"] == 2700.0
+        )
