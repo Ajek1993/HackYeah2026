@@ -1,6 +1,6 @@
 COMPOSE := docker compose
 
-.PHONY: env up down logs ps test test-api test-agent test-frontend lint format seed
+.PHONY: env up down logs ps test test-api test-agent test-frontend lint format seed celery-logs
 
 env:
 	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example - fill in API keys")
@@ -40,3 +40,6 @@ format: env
 
 seed: env
 	$(COMPOSE) exec api python -m app.seed
+
+celery-logs: env
+	$(COMPOSE) logs -f celery-worker celery-beat

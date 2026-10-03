@@ -10,6 +10,29 @@ class Settings:
         self.database_url = os.getenv("DATABASE_URL", "")
         self.cors_origins = _csv(os.getenv("CORS_ORIGINS", "http://localhost:5173"))
         self.demo_mode = os.getenv("DEMO_MODE", "false").lower() == "true"
+        self.celery_broker_url = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
+        self.celery_result_backend = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
+        self.shelters_csv_url = os.getenv(
+            "SHELTERS_CSV_URL",
+            "https://api.dane.gov.pl/resources/1393918,punkty-schronienia-dane-csv/file",
+        )
+        self.tauron_api_url = os.getenv(
+            "TAURON_API_URL",
+            "https://www.tauron-dystrybucja.pl/waapi/outages/items",
+        )
+        self.imgw_hydro_url = os.getenv(
+            "IMGW_HYDRO_URL",
+            "https://danepubliczne.imgw.pl/api/data/hydro",
+        )
+        self.imgw_warnings_hydro_url = os.getenv(
+            "IMGW_WARNINGS_HYDRO_URL",
+            "https://danepubliczne.imgw.pl/api/data/warningshydro",
+        )
+        self.imgw_warnings_meteo_url = os.getenv(
+            "IMGW_WARNINGS_METEO_URL",
+            "https://danepubliczne.imgw.pl/api/data/warningsmeteo",
+        )
+        self.krakow_teryt = os.getenv("KRAKOW_TERYT", "1261")
 
 
 settings = Settings()
