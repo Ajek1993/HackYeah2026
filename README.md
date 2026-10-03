@@ -41,6 +41,12 @@ Fill in `GLM_API_KEY` and `AIRLY_API_KEY` in `.env`. The default `GLM_BASE_URL` 
 | Agent | http://localhost:8001/health |
 | Agent API docs (try `POST /chat`) | http://localhost:8001/docs |
 
+The database schema (`db/init/`) is applied only when the `pgdata` volume is created. If you started the stack before the schema existed, apply it once:
+
+```bash
+docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/01-schema.sql'
+```
+
 The Demo tab (simulated scenarios) is visible only with `VITE_DEMO_MODE=true` and is meant for presentations only.
 
 ## Data sources
