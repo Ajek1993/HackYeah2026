@@ -62,4 +62,5 @@ Disclosed per HackYeah rules:
 
 ## Team
 
-- _TBD_
+- Team Leader: Małgorzata Kapusta 
+- Team: Arkadiusz Sarach, Dawid Kapusta
