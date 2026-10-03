@@ -7,6 +7,7 @@ import requests
 from app.celery_app import app
 from app.config import settings
 from app.db import get_conn
+from app.sources.guards import safe_to_deactivate
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ def _json_hash(obj: dict) -> str:
 # Hydro stations
 # ---------------------------------------------------------------------------
 
+
 @app.task(name="app.sources.imgw.fetch_imgw_hydro", bind=True, max_retries=2)
 def fetch_imgw_hydro(self):
     try:
@@ -30,11 +32,16 @@ def fetch_imgw_hydro(self):
         stations = resp.json()
     except requests.RequestException as exc:
         logger.error("Failed to fetch IMGW hydro: %s", exc)
-        raise self.retry(countdown=300, exc=exc)
+        raise self.retry(countdown=300, exc=exc) from exc
 
     if not isinstance(stations, list):
         logger.warning("IMGW hydro returned non-list: %s", type(stations))
         return {"status": "unexpected_format"}
+
+    if not stations:
+        # An empty station list is a feed failure, not "no stations": keep the cache
+        logger.warning("IMGW hydro returned an empty list; keeping cached stations")
+        return {"status": "empty"}
 
     conn = get_conn()
     try:
@@ -118,11 +125,14 @@ def fetch_imgw_hydro(self):
                     )
                     count += 1
 
-                cur.execute(
-                    "UPDATE hydro_stations SET is_active = false WHERE last_seen_at < %s AND is_active",
-                    (run_ts,),
-                )
-                deactivated = cur.rowcount
+                deactivated = 0
+                if safe_to_deactivate(cur, "hydro_stations", count):
+                    cur.execute(
+                        "UPDATE hydro_stations SET is_active = false"
+                        " WHERE last_seen_at < %s AND is_active",
+                        (run_ts,),
+                    )
+                    deactivated = cur.rowcount
 
         logger.info("IMGW hydro: upserted %d stations, deactivated %d", count, deactivated)
         return {"status": "ok", "upserted": count, "deactivated": deactivated}
@@ -133,6 +143,7 @@ def fetch_imgw_hydro(self):
 # ---------------------------------------------------------------------------
 # Warnings (hydro + meteo)
 # ---------------------------------------------------------------------------
+
 
 def _hydro_warning_key(item: dict) -> str:
     biuro = item.get("biuro", "")
@@ -258,6 +269,23 @@ def _upsert_warnings(cur, source: str, items: list[dict], run_ts):
     return count
 
 
+def _clear_warnings(source: str) -> dict:
+    """IMGW explicitly reports no warnings: the ones still active have ended."""
+    conn = get_conn()
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """UPDATE imgw_warnings SET is_active = false, last_seen_at = now()
+                       WHERE source = %s AND is_active""",
+                    (source,),
+                )
+                deactivated = cur.rowcount
+    finally:
+        conn.close()
+    return {"status": "no_warnings", "count": 0, "deactivated": deactivated}
+
+
 @app.task(name="app.sources.imgw.fetch_imgw_warnings", bind=True, max_retries=2)
 def fetch_imgw_warnings(self):
     results = {}
@@ -269,7 +297,7 @@ def fetch_imgw_warnings(self):
         try:
             resp = requests.get(url, headers=HEADERS, timeout=30)
             if resp.status_code == 404:
-                results[source] = {"status": "no_warnings", "count": 0}
+                results[source] = _clear_warnings(source)
                 continue
             resp.raise_for_status()
             data = resp.json()
@@ -279,7 +307,7 @@ def fetch_imgw_warnings(self):
             continue
 
         if isinstance(data, dict) and "message" in data:
-            results[source] = {"status": "no_warnings", "count": 0}
+            results[source] = _clear_warnings(source)
             continue
 
         if not isinstance(data, list):

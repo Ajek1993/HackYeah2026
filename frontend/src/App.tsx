@@ -18,6 +18,12 @@ export default function App({ demoMode = config.demoMode }: Props) {
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-3 focus:font-semibold"
+      >
+        Przejdź do treści
+      </a>
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-4">
           <Logo />
@@ -25,15 +31,12 @@ export default function App({ demoMode = config.demoMode }: Props) {
         </div>
       </header>
 
-      <main
-        id={`panel-${active}`}
-        role="tabpanel"
-        aria-labelledby={`tab-${active}`}
-        className="mx-auto w-full max-w-3xl flex-1 px-4 py-8"
-      >
-        {active === 'chat' && <ChatView />}
-        {active === 'map' && <MapView />}
-        {active === 'demo' && demoMode && <DemoView />}
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
+        <div id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`}>
+          {active === 'chat' && <ChatView />}
+          {active === 'map' && <MapView />}
+          {active === 'demo' && demoMode && <DemoView />}
+        </div>
       </main>
 
       <EmergencyBar />

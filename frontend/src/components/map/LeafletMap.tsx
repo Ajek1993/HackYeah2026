@@ -49,7 +49,16 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
 
   useEffect(() => {
     if (!container.current) return
-    const instance = L.map(container.current, { scrollWheelZoom: false }).setView(KRAKOW, 12)
+    const instance = L.map(container.current, { scrollWheelZoom: false, zoomControl: false })
+    instance.setView(KRAKOW, 12)
+    // Polish labels for screen readers (WCAG 3.1.2)
+    L.control.zoom({ zoomInTitle: 'Przybliż mapę', zoomOutTitle: 'Oddal mapę' }).addTo(instance)
+    instance.on('popupopen', (event) => {
+      event.popup
+        .getElement()
+        ?.querySelector('.leaflet-popup-close-button')
+        ?.setAttribute('aria-label', 'Zamknij')
+    })
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',

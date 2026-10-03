@@ -11,10 +11,10 @@ from app.sources.tauron import (
     fetch_tauron_outages,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures — Tauron API items
 # ---------------------------------------------------------------------------
+
 
 def _make_item(**overrides):
     base = {
@@ -94,6 +94,7 @@ MULTIPOINT_ITEM = _make_item(
 # _item_hash
 # ---------------------------------------------------------------------------
 
+
 class TestItemHash:
     def test_deterministic(self):
         item = {"a": 1, "b": "x"}
@@ -106,6 +107,7 @@ class TestItemHash:
 # ---------------------------------------------------------------------------
 # _is_in_krakow
 # ---------------------------------------------------------------------------
+
 
 class TestIsInKrakow:
     def test_center_inside_krakow(self):
@@ -132,14 +134,16 @@ class TestIsInKrakow:
 
     def test_message_case_insensitive(self):
         item = _make_item(
-            Coordinates=[], Center=None,
+            Coordinates=[],
+            Center=None,
             Message="KRAKÓW UL. WIELICKA",
         )
         assert _is_in_krakow(item) is True
 
     def test_krakow_without_polish_chars(self):
         item = _make_item(
-            Coordinates=[], Center=None,
+            Coordinates=[],
+            Center=None,
             Message="krakow ul. wielicka",
         )
         assert _is_in_krakow(item) is True
@@ -151,7 +155,8 @@ class TestIsInKrakow:
     def test_boundary_lat_below_min(self):
         item = _make_item(
             Center={"lat": 49.94, "lng": 19.90},
-            Coordinates=[], Message="",
+            Coordinates=[],
+            Message="",
         )
         assert _is_in_krakow(item) is False
 
@@ -162,7 +167,8 @@ class TestIsInKrakow:
     def test_boundary_lon_above_max(self):
         item = _make_item(
             Center={"lat": 50.05, "lng": 20.13},
-            Coordinates=[], Message="",
+            Coordinates=[],
+            Message="",
         )
         assert _is_in_krakow(item) is False
 
@@ -176,7 +182,9 @@ class TestIsInKrakow:
 
     def test_null_coordinates(self):
         item = _make_item(
-            Center=None, Coordinates=None, Message="",
+            Center=None,
+            Coordinates=None,
+            Message="",
         )
         assert _is_in_krakow(item) is False
 
@@ -184,6 +192,7 @@ class TestIsInKrakow:
 # ---------------------------------------------------------------------------
 # _build_geom_wkt
 # ---------------------------------------------------------------------------
+
 
 class TestBuildGeomWkt:
     def test_single_point(self):
@@ -211,11 +220,13 @@ class TestBuildGeomWkt:
         assert _build_geom_wkt(item) is None
 
     def test_three_open_points_are_multipoint(self):
-        item = _make_item(Coordinates=[
-            {"lat": 50.05, "lng": 19.93},
-            {"lat": 50.06, "lng": 19.94},
-            {"lat": 50.07, "lng": 19.95},
-        ])
+        item = _make_item(
+            Coordinates=[
+                {"lat": 50.05, "lng": 19.93},
+                {"lat": 50.06, "lng": 19.94},
+                {"lat": 50.07, "lng": 19.95},
+            ]
+        )
         wkt = _build_geom_wkt(item)
         assert wkt.startswith("SRID=4326;MULTIPOINT(")
 
@@ -223,6 +234,7 @@ class TestBuildGeomWkt:
 # ---------------------------------------------------------------------------
 # _build_center_wkt
 # ---------------------------------------------------------------------------
+
 
 class TestBuildCenterWkt:
     def test_valid_center(self):
@@ -242,6 +254,7 @@ class TestBuildCenterWkt:
 # ---------------------------------------------------------------------------
 # fetch_tauron_outages task (mocked)
 # ---------------------------------------------------------------------------
+
 
 class TestFetchTauronOutagesTask:
     def _mock_db(self, mock_conn):
@@ -289,7 +302,7 @@ class TestFetchTauronOutagesTask:
     def test_http_error_retries(self, mock_get):
         mock_get.side_effect = requests.ConnectionError("timeout")
 
-        with pytest.raises(Exception):
+        with pytest.raises(requests.ConnectionError):
             fetch_tauron_outages.apply().get(timeout=10)
 
     @patch("app.sources.tauron.get_conn")

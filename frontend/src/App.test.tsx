@@ -15,7 +15,9 @@ describe('App tabs', () => {
   it('shows the demo tab with a simulation banner when demo mode is on', async () => {
     render(<App demoMode />)
     await userEvent.click(screen.getByRole('tab', { name: 'Demo' }))
-    expect(screen.getByRole('status')).toHaveTextContent('Symulacja')
+    expect(screen.getByRole('complementary', { name: 'Symulacja' })).toHaveTextContent(
+      'To nie jest prawdziwy alarm',
+    )
   })
 
   it('starts on the chat tab', () => {
@@ -29,7 +31,40 @@ describe('App tabs', () => {
   })
 })
 
+describe('Page structure', () => {
+  it('has a main landmark with a skip link to it', () => {
+    render(<App demoMode={false} />)
+
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'main')
+    expect(screen.getByRole('link', { name: 'Przejdź do treści' })).toHaveAttribute('href', '#main')
+  })
+
+  it('points aria-controls only at the rendered panel', () => {
+    render(<App demoMode={false} />)
+
+    expect(screen.getByRole('tab', { name: 'Zapytaj' })).toHaveAttribute(
+      'aria-controls',
+      'panel-chat',
+    )
+    expect(screen.getByRole('tab', { name: 'Mapa' })).not.toHaveAttribute('aria-controls')
+    expect(document.getElementById('panel-chat')).toHaveAttribute('role', 'tabpanel')
+  })
+})
+
 describe('Emergency bar', () => {
+  it('keeps the other numbers in the DOM, hidden until expanded', async () => {
+    render(<App demoMode={false} />)
+
+    const toggle = screen.getByRole('button', { name: 'Inne numery' })
+    const list = document.getElementById(toggle.getAttribute('aria-controls')!)
+    expect(list).not.toBeNull()
+    expect(list).not.toBeVisible()
+
+    await userEvent.click(toggle)
+
+    expect(list).toBeVisible()
+  })
+
   it('always shows a callable 112 link', () => {
     render(<App demoMode={false} />)
     expect(screen.getByRole('link', { name: /112/ })).toHaveAttribute('href', 'tel:112')

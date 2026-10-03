@@ -6,9 +6,16 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 
 
 def main() -> None:
+    from app.sources.boundary import fetch_krakow_boundary
+    from app.sources.gios import fetch_gios_air_quality
+    from app.sources.imgw import fetch_imgw_hydro, fetch_imgw_warnings
     from app.sources.shelters import fetch_shelters
     from app.sources.tauron import fetch_tauron_outages
-    from app.sources.imgw import fetch_imgw_hydro, fetch_imgw_warnings
+
+    # Boundary first: it filters every other source to Kraków and draws meteo warnings
+    print("=== Seeding Kraków boundary ===")
+    result = fetch_krakow_boundary.apply().get(timeout=60)
+    print(f"  Result: {result}")
 
     print("=== Seeding shelters ===")
     result = fetch_shelters.apply().get(timeout=120)
@@ -24,6 +31,10 @@ def main() -> None:
 
     print("=== Seeding IMGW warnings ===")
     result = fetch_imgw_warnings.apply().get(timeout=60)
+    print(f"  Result: {result}")
+
+    print("=== Seeding GIOŚ air quality ===")
+    result = fetch_gios_air_quality.apply().get(timeout=180)
     print(f"  Result: {result}")
 
     print("=== Seed complete ===")

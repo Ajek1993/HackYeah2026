@@ -1,11 +1,9 @@
-import hashlib
 from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
 
 from app.sources.shelters import _parse_csv, _row_hash, fetch_shelters
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -18,43 +16,37 @@ CSV_HEADER = (
 )
 
 VALID_CSV = (
-    CSV_HEADER
-    + "OZO-AAA,Schron testowy,Obiekt ochrony ludności,,Kraków,Kraków,"
-    "małopolskie,50.06,19.94,\"ul. Testowa 1, Kraków\",Na żądanie\r\n"
+    CSV_HEADER + "OZO-AAA,Schron testowy,Obiekt ochrony ludności,,Kraków,Kraków,"
+    'małopolskie,50.06,19.94,"ul. Testowa 1, Kraków",Na żądanie\r\n'
     "OZO-BBB,Miejsce ochronne,Obiekt ochrony ludności,,Wrocław,Wrocław,"
-    "dolnośląskie,51.10,16.95,\"ul. Inna 2, Wrocław\",Określone godziny\r\n"
+    'dolnośląskie,51.10,16.95,"ul. Inna 2, Wrocław",Określone godziny\r\n'
 )
 
 CSV_WITH_BOM = VALID_CSV.encode("utf-8-sig")
 
 CSV_MISSING_COORDS = (
-    CSV_HEADER
-    + "OZO-CCC,Bez koordynatów,Obiekt,,Kraków,Kraków,małopolskie,,"
-    ",\"ul. X 1\",Na żądanie\r\n"
+    CSV_HEADER + "OZO-CCC,Bez koordynatów,Obiekt,,Kraków,Kraków,małopolskie,,"
+    ',"ul. X 1",Na żądanie\r\n'
 ).encode("utf-8-sig")
 
 CSV_BAD_COORDS = (
-    CSV_HEADER
-    + "OZO-DDD,Złe współrzędne,Obiekt,,Kraków,Kraków,małopolskie,abc,xyz,"
-    "\"ul. Y 2\",Na żądanie\r\n"
+    CSV_HEADER + "OZO-DDD,Złe współrzędne,Obiekt,,Kraków,Kraków,małopolskie,abc,xyz,"
+    '"ul. Y 2",Na żądanie\r\n'
 ).encode("utf-8-sig")
 
 EMPTY_CSV = CSV_HEADER.encode("utf-8-sig")
 
-CSV_MISSING_COLUMNS = (
-    "Identyfikator publiczny,Nazwa\r\n"
-    "OZO-EEE,Test\r\n"
-).encode("utf-8-sig")
+CSV_MISSING_COLUMNS = ("Identyfikator publiczny,Nazwa\r\n" "OZO-EEE,Test\r\n").encode("utf-8-sig")
 
-CSV_EMPTY_OPTIONAL_FIELDS = (
-    CSV_HEADER
-    + "OZO-FFF, Schron , , , , , ,50.06,19.94, , \r\n"
-).encode("utf-8-sig")
+CSV_EMPTY_OPTIONAL_FIELDS = (CSV_HEADER + "OZO-FFF, Schron , , , , , ,50.06,19.94, , \r\n").encode(
+    "utf-8-sig"
+)
 
 
 # ---------------------------------------------------------------------------
 # _row_hash
 # ---------------------------------------------------------------------------
+
 
 class TestRowHash:
     def test_deterministic(self):
@@ -75,6 +67,7 @@ class TestRowHash:
 # ---------------------------------------------------------------------------
 # _parse_csv
 # ---------------------------------------------------------------------------
+
 
 class TestParseCsv:
     def test_parses_valid_csv(self):
@@ -146,6 +139,7 @@ class TestParseCsv:
 # fetch_shelters task (mocked HTTP + DB)
 # ---------------------------------------------------------------------------
 
+
 class TestFetchSheltersTask:
     @patch("app.sources.shelters.get_conn")
     @patch("app.sources.shelters.requests.get")
@@ -156,7 +150,7 @@ class TestFetchSheltersTask:
         mock_get.return_value = mock_resp
 
         mock_cur = MagicMock()
-        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00"}
+        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00", "n": 0}
         mock_cur.rowcount = 0
         mock_conn_obj = MagicMock()
         mock_conn_obj.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)
@@ -170,7 +164,8 @@ class TestFetchSheltersTask:
         assert result["status"] == "ok"
         assert result["upserted"] == 2
         assert result["deactivated"] == 0
-        assert mock_cur.execute.call_count == 4  # SELECT now() + 2 upserts + 1 deactivate
+        # SELECT now() + 2 upserts + active count + deactivate
+        assert mock_cur.execute.call_count == 5
 
     @patch("app.sources.shelters.get_conn")
     @patch("app.sources.shelters.requests.get")
@@ -190,7 +185,7 @@ class TestFetchSheltersTask:
     def test_http_error_retries(self, mock_get):
         mock_get.side_effect = requests.ConnectionError("Connection refused")
 
-        with pytest.raises(Exception):
+        with pytest.raises(requests.ConnectionError):
             fetch_shelters.apply().get(timeout=10)
 
         assert mock_get.call_count >= 1
@@ -201,7 +196,7 @@ class TestFetchSheltersTask:
         mock_resp.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
         mock_get.return_value = mock_resp
 
-        with pytest.raises(Exception):
+        with pytest.raises(requests.HTTPError):
             fetch_shelters.apply().get(timeout=10)
 
     @patch("app.sources.shelters.get_conn")
@@ -213,7 +208,7 @@ class TestFetchSheltersTask:
         mock_get.return_value = mock_resp
 
         mock_cur = MagicMock()
-        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00"}
+        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00", "n": 0}
         mock_cur.rowcount = 5
         mock_conn_obj = MagicMock()
         mock_conn_obj.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)
@@ -234,7 +229,7 @@ class TestFetchSheltersTask:
         mock_get.return_value = mock_resp
 
         mock_cur = MagicMock()
-        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00"}
+        mock_cur.fetchone.return_value = {"ts": "2026-10-03T12:00:00+00:00", "n": 0}
         mock_cur.rowcount = 0
         mock_conn_obj = MagicMock()
         mock_conn_obj.cursor.return_value.__enter__ = MagicMock(return_value=mock_cur)

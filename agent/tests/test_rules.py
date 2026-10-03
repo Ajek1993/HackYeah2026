@@ -71,7 +71,7 @@ def test_place_in_krakow_wins_over_place_outside(make_client):
     )
 
     class TwoPlaces(FakeTools):
-        def execute(self, name, arguments):
+        async def execute(self, name, arguments, location=None):
             self.calls.append((name, arguments))
             return geocode_result(in_krakow="Testowa" in arguments)
 
@@ -174,14 +174,16 @@ def test_failed_question_is_not_stored_in_session(make_client):
     sessions = SessionStore(ttl_seconds=60, max_messages=20)
     post(make_client(failing_llm(), sessions=sessions), "Pytanie")
 
-    assert sessions.history("s-1") == []
+    assert all(sessions.history(sid) == [] for sid in list(sessions._sessions))
 
 
 LOCATION = {"lat": 50.03123, "lon": 19.92045, "accuracy_m": 25}
 
 
-def post_with_location(client, message, location=LOCATION):
-    payload = {"session_id": "s-1", "message": message, "location": location}
+def post_with_location(client, message, location=LOCATION, session_id=None):
+    payload = {"message": message, "location": location}
+    if session_id:
+        payload["session_id"] = session_id
     return client.post("/chat", json=payload)
 
 
@@ -193,7 +195,9 @@ def test_device_location_is_passed_to_model_as_system_note(make_client):
     messages = llm.calls[0]["messages"]
     note = messages[-2]
     assert note["role"] == "system"
-    assert "lat 50.03123, lon 19.92045" in note["content"]
+    # rounded to ~100 m for the model (audit L2); the exact point stays in the agent
+    assert "lat 50.031, lon 19.920" in note["content"]
+    assert "50.03123" not in note["content"]
     assert "accuracy about 25 m" in note["content"]
     assert messages[-1] == {"role": "user", "content": "Czy grozi mi zalanie?"}
 
@@ -203,11 +207,11 @@ def test_device_location_is_not_stored_in_session(make_client):
     llm = FakeLLM(llm_message(final_json()), llm_message(final_json()))
     client = make_client(llm, sessions=sessions)
 
-    post_with_location(client, "Pierwsze")
-    post(client, "Drugie bez lokalizacji")
+    session_id = post_with_location(client, "Pierwsze").json()["session_id"]
+    post(client, "Drugie bez lokalizacji", session_id)
 
-    assert all("50.03123" not in str(m["content"]) for m in sessions.history("s-1"))
-    assert all("50.03123" not in str(m["content"]) for m in llm.calls[1]["messages"])
+    assert all("50.03" not in str(m["content"]) for m in sessions.history(session_id))
+    assert all("50.03" not in str(m["content"]) for m in llm.calls[1]["messages"])
 
 
 def test_request_without_location_has_no_location_note(make_client):
@@ -243,4 +247,20 @@ def test_device_location_outside_krakow_returns_fixed_message(make_client):
     ],
 )
 def test_invalid_location_is_rejected(make_client, location):
+    assert post_with_location(make_client(FakeLLM()), "Pytanie", location).status_code == 422
+
+
+def test_exact_device_location_is_handed_to_tools(make_client):
+    shelter_call = tool_call("find_nearest_shelter", {"lat": 50.031, "lon": 19.920})
+    llm = FakeLLM(llm_message(tool_calls=[shelter_call]), llm_message(final_json()))
+    tools = FakeTools()
+
+    post_with_location(make_client(llm, tools), "Gdzie jest najbliższy schron?")
+
+    assert tools.locations == [(50.03123, 19.92045)]
+
+
+def test_location_accuracy_is_bounded(make_client):
+    location = {"lat": 50.0, "lon": 19.9, "accuracy_m": 1_000_000}
+
     assert post_with_location(make_client(FakeLLM()), "Pytanie", location).status_code == 422

@@ -29,40 +29,40 @@
 
 ## Faza 1 — Dane (backend)
 
-### T05 — Model danych i cache w `db` · `todo` · [B]
+### T05 — Model danych i cache w `db` · `done` · [B]
 - Tabele: odczyty źródeł (`source`, `kind`, `payload`, `fetched_at`), schrony
 - **Gotowe gdy:** migracja/inicjalizacja przy starcie, test zapisu i odczytu ostatniego odczytu
 
-### T06 — Schrony: JSON + seed + najbliższy schron · `todo` · [B]
+### T06 — Schrony: JSON + seed + najbliższy schron · `done` · [B]
 - `api/data/shelters.json` z realnego źródła (źródło w README), `make seed`, `GET /shelters`, `GET /shelters/nearest`
 - **Gotowe gdy:** test: dla współrzędnych na Dębnikach zwraca najbliższy schron z odległością
 
-### T07 — Geokodowanie + walidacja Krakowa · `todo` · [B]
+### T07 — Geokodowanie + walidacja Krakowa · `done` · [B]
 - `GET /geocode?q=` przez Nominatim (z User-Agent i limitem zapytań), flaga `in_krakow`
 - **Gotowe gdy:** testy: „Kobierzyńska, Kraków” → `in_krakow=true`; „Skawina” → `false`
 
-### T08 — Źródło IMGW (ostrzeżenia + stany wód) · `todo` · [B]
+### T08 — Źródło IMGW (ostrzeżenia + stany wód) · `done` · [B]
 - Moduł `api/app/sources/imgw.py`, zapis do cache
 - **Gotowe gdy:** `GET /warnings` i `GET /water-levels` zwracają dane z `source` i `updated_at`; test na zapisanym fixture
 
-### T09 — Źródło Tauron (wyłączenia prądu) · `todo` · [B]
+### T09 — Źródło Tauron (wyłączenia prądu) · `done` · [B]
 - Scraping/API Tauron Dystrybucja dla Krakowa
 - **Gotowe gdy:** `GET /power-outages` zwraca listę z lokalizacją; test na fixture
 
-### T10 — Jakość powietrza GIOŚ + Airly · `todo` · [B]
+### T10 — Jakość powietrza GIOŚ + Airly · `done` · [B]
 - Oba źródła; przy konflikcie zwracany najświeższy odczyt (US-04)
 - **Gotowe gdy:** `GET /air-quality` zwraca jeden odczyt z `source`; test konfliktu źródeł
 
-### T11 — Harmonogram odświeżania + nieaktualność · `todo` · [B]
+### T11 — Harmonogram odświeżania + nieaktualność · `done` · [B]
 - Zadanie w tle: Airly co 2h, pozostałe co 30 min; błąd źródła → zostaje ostatni cache
 - `is_stale=true` dla danych starszych niż 3h; brak cache → odpowiedź „brak danych”
 - **Gotowe gdy:** testy: stale > 3h, błąd źródła nie kasuje cache, Airly nie częściej niż co 2h
 
-### T12 — Poradnik bezpieczeństwa · `todo` · [B]
+### T12 — Poradnik bezpieczeństwa · `done` · [B]
 - Fragmenty poradnika jako pliki w `api/data/guide/` (powódź, brak prądu, atak / ukrycie, pożar, susza, jakość powietrza, ogólne), `GET /guide/{topic}`
 - **Gotowe gdy:** każdy temat zwraca tekst ze źródłem
 
-### T13 — `GET /summary` dla panelu · `todo` · [B]
+### T13 — `GET /summary` dla panelu · `done` · [B]
 - Zbiorcze podsumowanie zagrożeń w Krakowie (kafelki panelu)
 - **Gotowe gdy:** jeden request zwraca stan wszystkich źródeł z `updated_at` i `is_stale`
 
@@ -87,19 +87,19 @@
 
 ## Faza 3 — Frontend (autor)
 
-### T18 — Czat · `review` · [A]
+### T18 — Czat · `done` · [A]
 - Okno czatu, wskaźnik „agent pisze…”, źródła z godziną pod odpowiedzią, oznaczenie „dane sprzed X godz.”, dopisek o służbach, `session_id` w `sessionStorage`
 - **Gotowe gdy:** pytanie o Kobierzyńską zwraca odpowiedź ze źródłami end-to-end
 
-### T19 — Szybkie pytania + baner 112 · `review` · [A]
+### T19 — Szybkie pytania + baner 112 · `done` · [A]
 - Przyciski szybkich pytań (F6); baner „Dzwoń 112” z `tel:112` przy `emergency=true` **lub** słowach kluczowych (fallback)
 - **Gotowe gdy:** test vitest: fallback słów kluczowych pokazuje baner bez odpowiedzi agenta
 
-### T20 — Zakładka Mapa · `review` · [A]
+### T20 — Zakładka Mapa · `done` · [A]
 - Kafelki z `/summary`, mapa Leaflet + OSM, warstwy zagrożeń i schronów, wyszukiwanie adresu → marker + najbliższy schron z odległością
 - **Gotowe gdy:** po wpisaniu adresu na mapie widać marker i najbliższy schron; nieaktualne kafelki oznaczone
 
-### T29 — Lokalizacja urządzenia · `review` · [A] (+ [B]: `GET /reverse`)
+### T29 — Lokalizacja urządzenia · `done` · [A] (+ [B]: `GET /reverse`)
 - Uwaga autora: gdy w pytaniu nie ma adresu, aplikacja korzysta z lokalizacji użytkownika
 - Front pyta o zgodę przy pierwszym pytaniu; `location` w `POST /chat`; przycisk „Użyj mojej lokalizacji” w Mapie
 - Agent: narzędzie `reverse_geocode`, notatka systemowa z lokalizacją (nie w sesji), reguła zasięgu jak dla adresu
@@ -120,17 +120,25 @@
 
 ### T23 — Deploy backendu na VPS · `todo` · [B]
 - docker-compose na VPS, reverse proxy z HTTPS, CORS na domenę Vercela
+- Z audytu bezpieczeństwa (infrastruktura, odłożone przez autora):
+  - N1: `docker-compose.prod.yml` — sieci `edge` / `backend (internal)`, porty tylko na proxy, bez bind mountów i `--reload`, `restart`, healthchecki, `USER` w obrazach Python, hasło Redis
+  - N2/N3: proxy z TLS 1.2/1.3, `server_tokens off`, nagłówki bezpieczeństwa, limity body i timeouty, `proxy_set_header` + uvicorn `--proxy-headers --forwarded-allow-ips` (inaczej limiter widzi IP proxy), access log z `$uri` zamiast `$request_uri`
+  - D3: role DB (scraper zapis, api tylko odczyt), agent bez zmiennych DB
+  - D4: osobne pliki env na usługę, hasła przez `secrets:`, `statement_timeout` i `idle_in_transaction_session_timeout`
+  - X2: testy poza entrypointem, obraz bez zależności dev; X3: lockfile z hashami i `pip-audit`
+  - Na serwerze: `APP_ENV=production`, losowy `API_INTERNAL_TOKEN`
 - **Gotowe gdy:** `https://<domena>/health` → 200 z przeglądarki
 
 ### T24 — Deploy frontendu na Vercel · `todo` · [A]
 - Zmienne `VITE_*` wskazują na VPS; wersja prezentacyjna z `VITE_DEMO_MODE=true`
+- Z audytu: `vercel.json` z nagłówkami (`frame-ancestors 'none'`, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy: geolocation=(self)`); CSP z `<meta>` (build) już jest
 - **Gotowe gdy:** publiczny link działa end-to-end (czat, mapa, demo)
 
 ### T25 — README końcowe · `todo` · [A]
 - Uruchomienie, architektura, źródła danych z licencjami, ujawnienie AI/API/danych, zespół
 - **Gotowe gdy:** nowa osoba uruchamia projekt z README przez `make up`
 
-### T26 — Przegląd dostępności i bezpieczeństwa · `todo` · [A]
+### T26 — Przegląd dostępności i bezpieczeństwa · `done` · [A]
 - Skill `wcag_audit` (18px, kontrast AA, 360px); agent `security-auditor` (brak sekretów, brak logowania rozmów)
 - **Gotowe gdy:** brak krytycznych uwag
 
@@ -178,6 +186,31 @@
 - T20: `src/api/data.ts` (klient `api` wg kontraktu), `MapView` — kafelki z `/summary` (status słownie, nie tylko kolorem; „dane sprzed X godz.”; „Dane symulowane”), wyszukiwanie adresu (`/geocode` → poza Krakowem stały komunikat, nie znaleziono → prośba o doprecyzowanie) → `/shelters/nearest?limit=1` → karta schronu z odległością; `LeafletMap` (Leaflet 1.9.4 + kafelki OSM, bez `react-leaflet`): warstwy ostrzeżeń (GeoJSON), wyłączeń prądu i schronów z przełącznikami, schron jako znak obrony cywilnej, przerywana linia adres → najbliższy schron; vitest 41/41 (Leaflet zamockowany w testach), oxlint OK, build OK; brak zrzutów ekranu (rozszerzenie Chrome niepołączone); bez endpointów `api` mapa pokazuje „Brak danych”
 - T29: decyzje autora — zgoda na lokalizację przy pierwszym pytaniu, zasięg przez nowy `GET /reverse` w `api`; kontrakt zaktualizowany (`/reverse`, pole `location`); agent: `reverse_geocode`, `build_location_note` (nazwane miejsce ma pierwszeństwo — na żywym GLM sprawdzone dla pytania bez adresu i z „Rynkiem Głównym”); front: `src/lib/geolocation.ts`, `useChat` (lokalizacja raz na stronę, tylko w pamięci), podpowiedź pod polem pytania, „Czekam na zgodę na lokalizację”, przycisk w Mapie; pytest agent 80/80, vitest 48/48, oxlint + build OK
 
+- Faza 3 zaakceptowana przez autora — T18–T20 `done`; T29: część [A] (agent + front) zaakceptowana, task `in_progress` do czasu `GET /reverse` w `api` [B]
+
+### Backend — endpointy `api` (branch `add-api-endpoints`, decyzja zespołu: robi autor/Claude)
+- Scrapery kolegi (schrony, Tauron, IMGW, Celery beat, schemat PostGIS) + nowe w `api`:
+  - `GET /shelters`, `/shelters/nearest` (KNN po indeksie, sortowanie w metrach), `/warnings`, `/water-levels`, `/power-outages`, `/air-quality`, `/geocode`, `/reverse`, `/guide/{topic}`, `/summary` wg kontraktu
+  - granica Krakowa z OSM/Nominatim w `ref_areas` (powiat 1261) — filtr „w Krakowie” (`ST_Contains`, fallback bbox) i geometria ostrzeżeń meteo
+  - GIOŚ (co 1h, 9 stacji, `db/init/02-air-quality.sql`), Airly tylko z kluczem (co 2h)
+  - poradnik: `api/data/guide/*.json` wiernie z „Poradnika bezpieczeństwa” 1/2025 (gov.pl) — powódź, blackout, atak z powietrza + schronienia, pożar, ogólne; susza i jakość powietrza nie występują w poradniku → `data: null`
+  - Nominatim: 1 req/s, User-Agent z kontaktem, cache tylko w pamięci; filtr access logu usuwa query string (adresy i współrzędne nie trafiają do logów — audyt X1)
+  - czasy w odpowiedziach w strefie Kraków (`+02:00`)
+- Zależności: `httpx`, `psycopg[pool]` (decyzja autora); async pool w lifespan FastAPI
+- Weryfikacja: pytest api 185/185 (w tym testy integracyjne na PostGIS), agent 80/80, vitest 48/48; e2e na żywym GLM: Kobierzyńska → stany Wisły/Rudawy/Wilgi i ostrzeżenie o suszy z godziną + kroki z poradnika; Skawina → komunikat zasięgu (2,4 s); „najbliższy schron” z lokalizacją → 3 schrony z odległością
+- Lint: na prośbę autora poprawione także starsze scrapery i ich testy (formatowanie, importy, `raise ... from exc` przy retry, dokładne wyjątki zamiast `pytest.raises(Exception)`); `make lint` przechodzi dla api, agent i frontend
+
+- Review backendu (T06–T13) i T29 zaakceptowane przez autora — `done`; T26 `in_progress` (audyty WCAG i bezpieczeństwa gotowe, poprawki na branchu `add-api-endpoints`)
+
+### T26 — poprawki po audytach (branch `add-api-endpoints`)
+- WCAG (wszystkie 11 z `specs/wcag_repair_plan.md`): biały fokus na pasku 112 i banerze, lista tekstowa ostrzeżeń i wyłączeń pod mapą, landmark `main` + „Przejdź do treści”, pytanie jako `h2`, reflow paska alarmowego (`hidden`, przewijanie, `flex-wrap`, `static` przy niskim ekranie), polskie etykiety Leaflet, `aria-controls` tylko dla istniejących elementów, `aside` w Demo
+- Agent: maks. 3 rundy i 6 wywołań na rundę, limit czasu 45 s, limit 5000 sesji; walidacja argumentów narzędzi (Pydantic + JSON Schema); dane z narzędzi oznaczone w prompcie jako niezaufane i obcinane do 500 znaków; lokalizacja dla modelu zaokrąglona do ~100 m (narzędzia dostają dokładną); `session_id` nadawany przez agenta; `extra="forbid"`; async (AsyncOpenAI, httpx.AsyncClient); limit 10 pytań/min na IP (429); docs wyłączone przy `APP_ENV=production`; ostrzejsza reguła „tylko kroki z poradnika” przy zagrożeniu życia
+- api: limit 30 geokodowań/min na IP (agent z `X-Internal-Token` pominięty); docs wyłączone w produkcji; scrapery nie wygaszają danych przy podejrzanie małym lub pustym feedzie (< 50% aktywnych); jawne „brak ostrzeżeń” IMGW wygasza stare ostrzeżenia; współrzędne Tauronu walidowane przed WKT
+- Frontend: font hostowany lokalnie (`@fontsource/atkinson-hyperlegible-next`, bez Google Fonts), CSP jako `<meta>` w buildzie (`csp.ts` z testami), linki źródeł tylko `https`, `session_id` z odpowiedzi agenta, komunikat przy 429
+- Weryfikacja: pytest api 197/197, agent 109/109, vitest 59/59, `make lint` OK, build z CSP; na żywym GLM: nowe ID sesji, kontekst w drugim pytaniu, zmyślone ID zastąpione, najbliższy schron 145 m (dokładna lokalizacja), emergency z krokami z poradnika; limity 429 działają; brak adresów i współrzędnych w logach
+- Infrastruktura z audytu przeniesiona do T23 / T24 (decyzja autora)
+- Review autora: zaakceptowane — T26 `done`
+
 ### Odstępstwa
 - Lint frontendu: `oxlint` (domyślny w szablonie Vite) zamiast `eslint`
 - Zakładka czatu nazwana „Zapytaj” (czytelniej niż „Czat”)
@@ -188,8 +221,8 @@
 
 ### Do decyzji autora
 - Treść nowego stałego komunikatu `EMERGENCY_NO_GUIDE_MESSAGE` do akceptacji
-- Backend: zaimplementować `GET /reverse` (T29)
-- Prywatność (do backendu): `GET /geocode?q=<adres>` i `GET /reverse?lat&lon` — access log uvicorna zapisuje query string, czyli adres użytkownika (SPEC: Never); wyłączyć access log w `api` (`--no-access-log`) albo zmienić na `POST` (zmiana kontraktu)
+- Prywatność logów `api`: rozwiązane filtrem access logu (query string usuwany); logi przyszłego reverse proxy trzeba skonfigurować tak samo (`$uri` zamiast `$request_uri`)
 - T20: nowa zależność `leaflet` + `@types/leaflet` (Leaflet był w ustalonym stacku architektury)
+- Przy `emergency` z załadowanym poradnikiem model po zaostrzeniu promptu trzyma się poradnika, ale nadal potrafi dodać pojedyncze doprecyzowanie (np. „nie schodź do piwnicy, jeśli woda dotyka gniazdek”) — twarde wymuszenie wymagałoby składania odpowiedzi z kroków poradnika w kodzie
 - T16: czas odpowiedzi — każda runda GLM 4–9 s; przy działającym `api` typowo 3 rundy (geocode → dane równolegle → odpowiedź) ≈ 15 s; dalsze opcje: usunąć dublowanie `answer` + `sections` w JSON (mniej tokenów) albo streaming odpowiedzi
 

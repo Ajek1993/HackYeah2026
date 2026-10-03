@@ -1,7 +1,7 @@
 import hashlib
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import requests
 
@@ -53,12 +53,23 @@ def _is_in_krakow(item: dict) -> bool:
     return False
 
 
+def _coordinate(point: dict) -> tuple[float, float] | None:
+    """(lon, lat) as floats inside Poland, or None: feed values never reach WKT unchecked."""
+    try:
+        lon, lat = float(point["lng"]), float(point["lat"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not (14.0 <= lon <= 24.2 and 49.0 <= lat <= 55.0):
+        return None
+    return lon, lat
+
+
 def _build_geom_wkt(item: dict) -> str | None:
     coords = item.get("Coordinates") or []
     if not coords:
         return None
 
-    points = [(c["lng"], c["lat"]) for c in coords if c.get("lat") and c.get("lng")]
+    points = [p for p in (_coordinate(c) for c in coords if isinstance(c, dict)) if p]
     if not points:
         return None
 
@@ -75,28 +86,27 @@ def _build_geom_wkt(item: dict) -> str | None:
 
 def _build_center_wkt(item: dict) -> str | None:
     center = item.get("Center")
-    if center and center.get("lat") and center.get("lng"):
-        return f"SRID=4326;POINT({center['lng']} {center['lat']})"
+    point = _coordinate(center) if isinstance(center, dict) else None
+    if point:
+        return f"SRID=4326;POINT({point[0]} {point[1]})"
     return None
 
 
 @app.task(name="app.sources.tauron.fetch_tauron_outages", bind=True, max_retries=2)
 def fetch_tauron_outages(self):
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     params = {
         "fromDate": now_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
         "toDate": (now_utc + timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
     }
 
     try:
-        resp = requests.get(
-            settings.tauron_api_url, params=params, headers=HEADERS, timeout=30
-        )
+        resp = requests.get(settings.tauron_api_url, params=params, headers=HEADERS, timeout=30)
         resp.raise_for_status()
         items = resp.json()
     except requests.RequestException as exc:
         logger.error("Failed to fetch Tauron outages: %s", exc)
-        raise self.retry(countdown=120, exc=exc)
+        raise self.retry(countdown=120, exc=exc) from exc
 
     krakow_items = [it for it in items if _is_in_krakow(it)]
 
@@ -169,7 +179,9 @@ def fetch_tauron_outages(self):
 
         logger.info(
             "Tauron: %d total items, %d in Kraków, %d deactivated",
-            len(items), len(krakow_items), deactivated,
+            len(items),
+            len(krakow_items),
+            deactivated,
         )
         return {
             "status": "ok",

@@ -1,0 +1,69 @@
+{
+  "topic": "bomb_threat",
+  "title": "Atak z powietrza i schronienia",
+  "pages": "20, 25, 30",
+  "before": [
+    "Sprawdź, gdzie jest najbliższe miejsce schronienia. Informacje o lokalizacji miejsc schronienia znajdziesz w urzędzie gminy, jednostce Państwowej lub Ochotniczej Straży Pożarnej oraz na stronie gov.pl/kgpsp.",
+    "Skompletuj plecak ewakuacyjny."
+  ],
+  "during": [
+    "Kiedy usłyszysz sygnał alarmowy, idź ustaloną wcześniej drogą ewakuacyjną do miejsca schronienia. Zabierz ze sobą plecak ewakuacyjny. Unikaj wind, idź schodami.",
+    "Schronienie, do którego się udajesz, powinno być bez okien, mieć grube ściany, gruby strop, dostęp do powietrza i wyjście awaryjne.",
+    "Jeśli nie możesz ukryć się w oznaczonym miejscu schronienia, zostań w domu – z dala od okien, przy ścianach nośnych, w centralnych pomieszczeniach.",
+    "Jeśli jesteś poza domem, szukaj miejsc, które zapewniają przynajmniej minimum ochrony (najniższe kondygnacje budynków, w tym piwnice, garaże podziemne, tunele, przejścia podziemne). Nawet zwykłe zagłębienia terenu zapewniają lepszą ochronę niż przebywanie na otwartej przestrzeni.",
+    "Jeśli na otwartym terenie usłyszysz eksplozję, padnij na ziemię – najlepiej w zagłębieniu – i osłoń głowę.",
+    "Nie przeciążaj linii telefonicznych – korzystaj z SMS-ów.",
+    "Pomóż innym – sprawdź, kto wokół Ciebie potrzebuje wsparcia."
+  ],
+  "after": [
+    "Nie wychodź ze schronienia pochopnie."
+  ],
+  "notes": [
+    "Ogłoszenie alarmu: ciągły, modulowany dźwięk syreny przez 3 minuty. Odwołanie alarmu: ciągły, jednostajny dźwięk syreny przez 3 minuty.",
+    "Jeśli usłyszysz sygnał alarmowy, włącz radio lub telewizor i stosuj się do komunikatów."
+  ],
+  "emergency_numbers": [
+    {
+      "name": "Numer alarmowy",
+      "number": "112"
+    },
+    {
+      "name": "Pogotowie ratunkowe",
+      "number": "999"
+    },
+    {
+      "name": "Straż pożarna",
+      "number": "998"
+    },
+    {
+      "name": "Policja",
+      "number": "997"
+    },
+    {
+      "name": "Pogotowie wodno-kanalizacyjne",
+      "number": "994"
+    },
+    {
+      "name": "Pogotowie ciepłownicze",
+      "number": "993"
+    },
+    {
+      "name": "Pogotowie gazownicze",
+      "number": "992"
+    },
+    {
+      "name": "Pogotowie energetyczne",
+      "number": "991"
+    },
+    {
+      "name": "Wojewódzkie centrum zarządzania kryzysowego",
+      "number": "987"
+    },
+    {
+      "name": "Straż miejska",
+      "number": "986"
+    }
+  ],
+  "source_url": "https://www.gov.pl/attachment/9356d407-b74b-4219-8f2f-d80294b3bd16",
+  "publication": "Poradnik bezpieczeństwa, nr publikacji 1/2025, MON, MSWiA, RCB"
+}

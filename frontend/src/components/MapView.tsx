@@ -232,6 +232,7 @@ export function MapView() {
             </label>
           ))}
         </fieldset>
+        <MapTextList warnings={warnings} outages={outages} />
       </div>
     </section>
   )
@@ -252,4 +253,40 @@ function LayerSwatch({ id }: { id: LayerId }) {
     )
   }
   return <span aria-hidden="true" className="size-5 rounded-full bg-caution" />
+}
+
+// Text alternative for the map layers: keyboard and screen reader users get the same
+// information as from the popups (WCAG 1.1.1, 2.1.1)
+function MapTextList({ warnings, outages }: { warnings: Warning[]; outages: PowerOutage[] }) {
+  return (
+    <details className="rounded-lg border-2 border-line bg-surface p-4">
+      <summary className="min-h-12 cursor-pointer font-semibold">
+        Lista zagrożeń z mapy ({warnings.length + outages.length})
+      </summary>
+      <h2 className="mt-3 text-lg font-extrabold">Ostrzeżenia</h2>
+      {warnings.length ? (
+        <ul className="mt-1 flex list-disc flex-col gap-1 pl-6">
+          {warnings.map((warning) => (
+            <li key={warning.id}>
+              <strong>{warning.title}</strong> – {warning.area}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1">Brak aktywnych ostrzeżeń.</p>
+      )}
+      <h2 className="mt-3 text-lg font-extrabold">Wyłączenia prądu</h2>
+      {outages.length ? (
+        <ul className="mt-1 flex list-disc flex-col gap-1 pl-6">
+          {outages.map((outage) => (
+            <li key={outage.id}>
+              {outage.planned ? 'Planowane wyłączenie' : 'Awaria'}: {outage.area}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1">Brak wyłączeń prądu.</p>
+      )}
+    </details>
+  )
 }

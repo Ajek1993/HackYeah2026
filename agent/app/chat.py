@@ -1,7 +1,8 @@
 import json
+import time
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.config import settings
 from app.llm import GLMClient
@@ -12,18 +13,25 @@ from app.prompt import (
     build_location_note,
     build_system_prompt,
 )
-from app.session import SessionStore
-from app.tools import TOOL_DEFINITIONS, Source, ToolExecutor
+from app.session import SESSION_ID_PATTERN, SessionStore
+from app.tools import TOOL_DEFINITIONS, Source, ToolExecutor, ToolResult
+
+TOO_MANY_CALLS = ToolResult(content=json.dumps({"error": "Too many tool calls in one turn"}))
 
 
 class Location(BaseModel):
-    lat: float = Field(ge=-90, le=90)
-    lon: float = Field(ge=-180, le=180)
-    accuracy_m: float | None = Field(default=None, ge=0)
+    model_config = ConfigDict(extra="forbid")
+
+    lat: float = Field(ge=-90, le=90, allow_inf_nan=False)
+    lon: float = Field(ge=-180, le=180, allow_inf_nan=False)
+    accuracy_m: float | None = Field(default=None, ge=0, le=100_000, allow_inf_nan=False)
 
 
 class ChatRequest(BaseModel):
-    session_id: str = Field(min_length=1, max_length=100)
+    model_config = ConfigDict(extra="forbid")
+
+    # Omitted on the first question; afterwards the id issued by the agent
+    session_id: str | None = Field(default=None, pattern=SESSION_ID_PATTERN)
     message: str = Field(min_length=1, max_length=2000)
     location: Location | None = None
 
@@ -99,21 +107,31 @@ class ChatService:
         tools: ToolExecutor,
         sessions: SessionStore,
         max_tool_rounds: int | None = None,
+        max_tool_calls: int | None = None,
+        deadline_s: float | None = None,
+        clock=time.monotonic,
     ) -> None:
         self._llm = llm
         self._tools = tools
         self._sessions = sessions
         self._max_tool_rounds = max_tool_rounds or settings.max_tool_rounds
+        self._max_tool_calls = max_tool_calls or settings.max_tool_calls_per_round
+        self._deadline_s = deadline_s or settings.request_deadline_s
+        self._clock = clock
 
-    def reply(self, request: ChatRequest) -> ChatResponse:
+    async def reply(self, request: ChatRequest) -> ChatResponse:
+        started = self._clock()
+        session_id = self._sessions.resolve(request.session_id)
         user_message = {"role": "user", "content": request.message}
         messages = [
             {"role": "system", "content": build_system_prompt()},
-            *self._sessions.history(request.session_id),
+            *self._sessions.history(session_id),
         ]
+        location = None
         if request.location:
             # Sent with every request, never stored in the session: device location is sensitive.
             loc = request.location
+            location = (loc.lat, loc.lon)
             messages.append(
                 {"role": "system", "content": build_location_note(loc.lat, loc.lon, loc.accuracy_m)}
             )
@@ -124,13 +142,20 @@ class ChatService:
 
         final = None
         for _ in range(self._max_tool_rounds):
-            message = self._llm.complete(messages, tools=TOOL_DEFINITIONS)
+            if self._clock() - started > self._deadline_s:
+                break  # time budget spent: answer from what has been gathered
+            message = await self._llm.complete(messages, tools=TOOL_DEFINITIONS)
             if not message.tool_calls:
                 final = message
                 break
             messages.append(_assistant_message(message))
-            for call in message.tool_calls:
-                result = self._tools.execute(call.function.name, call.function.arguments)
+            for index, call in enumerate(message.tool_calls):
+                if index >= self._max_tool_calls:
+                    result = TOO_MANY_CALLS
+                else:
+                    result = await self._tools.execute(
+                        call.function.name, call.function.arguments, location
+                    )
                 for source in result.sources:
                     sources[(source.name, source.updated_at)] = source
                 if call.function.name in ("geocode", "reverse_geocode") and result.payload:
@@ -142,17 +167,17 @@ class ChatService:
                 )
             if _outside_krakow(geocoded):
                 # Fixed message, no further model round (US-01, saves tokens).
-                return self._respond(request, user_message, {"out_of_area": True}, {}, False)
+                return self._respond(session_id, user_message, {"out_of_area": True}, {}, False)
         if final is None:
-            # Tool budget exhausted: force an answer from what has been gathered.
-            final = self._llm.complete(messages)
+            # Tool or time budget exhausted: force an answer from what has been gathered.
+            final = await self._llm.complete(messages)
 
         parsed = _parse_final(final.content)
-        return self._respond(request, user_message, parsed, sources, guide_loaded)
+        return self._respond(session_id, user_message, parsed, sources, guide_loaded)
 
     def _respond(
         self,
-        request: ChatRequest,
+        session_id: str,
         user_message: dict[str, Any],
         parsed: dict[str, Any],
         sources: dict[tuple[str, str | None], Source],
@@ -169,12 +194,10 @@ class ChatService:
         else:
             answer, sections = parsed["answer"], _parse_sections(parsed.get("sections"))
 
-        self._sessions.append(
-            request.session_id, user_message, {"role": "assistant", "content": answer}
-        )
+        self._sessions.append(session_id, user_message, {"role": "assistant", "content": answer})
 
         return ChatResponse(
-            session_id=request.session_id,
+            session_id=session_id,
             answer=answer,
             sections=sections,
             sources=[

@@ -41,17 +41,23 @@ class TestSettings:
             assert s.cors_origins == ["http://a.com", "http://b.com"]
 
     def test_cors_origins_empty_items_stripped(self):
-        with patch.dict(os.environ, {"CORS_ORIGINS": "http://a.com,,, http://b.com, "}, clear=False):
+        with patch.dict(
+            os.environ, {"CORS_ORIGINS": "http://a.com,,, http://b.com, "}, clear=False
+        ):
             s = Settings()
             assert s.cors_origins == ["http://a.com", "http://b.com"]
 
     def test_custom_urls(self):
-        with patch.dict(os.environ, {
-            "SHELTERS_CSV_URL": "http://custom/shelters",
-            "TAURON_API_URL": "http://custom/tauron",
-            "IMGW_HYDRO_URL": "http://custom/hydro",
-            "KRAKOW_TERYT": "9999",
-        }, clear=False):
+        with patch.dict(
+            os.environ,
+            {
+                "SHELTERS_CSV_URL": "http://custom/shelters",
+                "TAURON_API_URL": "http://custom/tauron",
+                "IMGW_HYDRO_URL": "http://custom/hydro",
+                "KRAKOW_TERYT": "9999",
+            },
+            clear=False,
+        ):
             s = Settings()
             assert s.shelters_csv_url == "http://custom/shelters"
             assert s.tauron_api_url == "http://custom/tauron"

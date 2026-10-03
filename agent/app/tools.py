@@ -1,17 +1,70 @@
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 import httpx
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.config import settings
-from app.prompt import NO_DATA_MESSAGE
+from app.prompt import LOCATION_DECIMALS, NO_DATA_MESSAGE
 
 GUIDE_TOPICS = ["flood", "power_outage", "bomb_threat", "fire", "drought", "air_quality", "general"]
 
-_LAT = {"type": "number", "description": "Latitude (WGS84), from geocode or the device location"}
-_LON = {"type": "number", "description": "Longitude (WGS84), from geocode or the device location"}
+# Free text from external feeds (outage messages, warning bodies) is cut before it
+# reaches the model: shorter prompts, less room for injected instructions (LLM01).
+MAX_TEXT_LENGTH = 500
+
+# Data tools serve Poland only (the api validates the same bounds)
+PL_LAT = (49.0, 55.0)
+PL_LON = (14.0, 24.2)
+
+
+class _Args(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class GeocodeArgs(_Args):
+    query: str = Field(min_length=2, max_length=200)
+
+
+class PointArgs(_Args):
+    lat: float = Field(ge=-90, le=90, allow_inf_nan=False)
+    lon: float = Field(ge=-180, le=180, allow_inf_nan=False)
+
+
+class OptionalPolandPointArgs(_Args):
+    lat: float | None = Field(default=None, ge=PL_LAT[0], le=PL_LAT[1], allow_inf_nan=False)
+    lon: float | None = Field(default=None, ge=PL_LON[0], le=PL_LON[1], allow_inf_nan=False)
+
+
+class ShelterArgs(_Args):
+    lat: float = Field(ge=PL_LAT[0], le=PL_LAT[1], allow_inf_nan=False)
+    lon: float = Field(ge=PL_LON[0], le=PL_LON[1], allow_inf_nan=False)
+    limit: int = Field(default=3, ge=1, le=10)
+
+
+class GuideArgs(_Args):
+    topic: Literal[
+        "flood", "power_outage", "bomb_threat", "fire", "drought", "air_quality", "general"
+    ]
+
+
+class NoArgs(_Args):
+    pass
+
+
+def _number(description: str, bounds: tuple[float, float]) -> dict:
+    return {
+        "type": "number",
+        "description": description,
+        "minimum": bounds[0],
+        "maximum": bounds[1],
+    }
+
+
+_LAT = _number("Latitude (WGS84), from geocode or the device location", PL_LAT)
+_LON = _number("Longitude (WGS84), from geocode or the device location", PL_LON)
 
 
 def _function(name: str, description: str, properties: dict, required: list[str]) -> dict:
@@ -20,7 +73,12 @@ def _function(name: str, description: str, properties: dict, required: list[str]
         "function": {
             "name": name,
             "description": description,
-            "parameters": {"type": "object", "properties": properties, "required": required},
+            "parameters": {
+                "type": "object",
+                "properties": properties,
+                "required": required,
+                "additionalProperties": False,
+            },
         },
     }
 
@@ -30,14 +88,24 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         "geocode",
         "Resolve a street, address or district to coordinates. Returns `found` and `in_krakow`. "
         "Always call it before answering about a specific place.",
-        {"query": {"type": "string", "description": "Place name, e.g. 'Kobierzyńska 1, Kraków'"}},
+        {
+            "query": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 200,
+                "description": "Place name, e.g. 'Kobierzyńska 1, Kraków'",
+            }
+        },
         ["query"],
     ),
     _function(
         "reverse_geocode",
         "Resolve coordinates (e.g. the user's device location) to a street and district. "
         "Returns `found` and `in_krakow`. Use it when the question names no place.",
-        {"lat": _LAT, "lon": _LON},
+        {
+            "lat": _number("Latitude (WGS84)", (-90, 90)),
+            "lon": _number("Longitude (WGS84)", (-180, 180)),
+        },
         ["lat", "lon"],
     ),
     _function(
@@ -71,7 +139,12 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         {
             "lat": _LAT,
             "lon": _LON,
-            "limit": {"type": "integer", "description": "How many shelters, default 3"},
+            "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10,
+                "description": "How many shelters, default 3",
+            },
         },
         ["lat", "lon"],
     ),
@@ -82,6 +155,17 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         ["topic"],
     ),
 ]
+
+ARG_MODELS: dict[str, type[_Args]] = {
+    "geocode": GeocodeArgs,
+    "reverse_geocode": PointArgs,
+    "get_warnings": OptionalPolandPointArgs,
+    "get_water_levels": NoArgs,
+    "get_air_quality": OptionalPolandPointArgs,
+    "get_power_outages": OptionalPolandPointArgs,
+    "find_nearest_shelter": ShelterArgs,
+    "get_guide": GuideArgs,
+}
 
 
 @dataclass(frozen=True)
@@ -120,69 +204,112 @@ def _is_envelope(payload: Any) -> bool:
     return isinstance(payload, dict) and "source" in payload and "data" in payload
 
 
+def truncate_texts(value: Any, limit: int = MAX_TEXT_LENGTH) -> Any:
+    if isinstance(value, str):
+        return value if len(value) <= limit else value[:limit].rstrip() + "…"
+    if isinstance(value, list):
+        return [truncate_texts(v, limit) for v in value]
+    if isinstance(value, dict):
+        return {k: truncate_texts(v, limit) for k, v in value.items()}
+    return value
+
+
+def _restore_exact_point(
+    args: dict[str, Any], location: tuple[float, float] | None
+) -> dict[str, Any]:
+    """The model only sees the device location rounded to ~100 m (LLM02); when it passes
+    those rounded coordinates to a tool, the exact ones are used instead."""
+    if not location or args.get("lat") is None or args.get("lon") is None:
+        return args
+    lat, lon = location
+    try:
+        matches = round(float(args["lat"]), LOCATION_DECIMALS) == round(
+            lat, LOCATION_DECIMALS
+        ) and round(float(args["lon"]), LOCATION_DECIMALS) == round(lon, LOCATION_DECIMALS)
+    except (TypeError, ValueError):
+        return args
+    return {**args, "lat": lat, "lon": lon} if matches else args
+
+
 class ToolExecutor:
     """Runs tool calls requested by the model against the `api` service.
 
-    Failures never raise: the model gets an error it must report as "Brak danych".
+    Arguments are validated before any request; failures never raise: the model gets an
+    error it must report as "Brak danych".
     """
 
-    def __init__(self, client: httpx.Client | None = None, now: datetime | None = None) -> None:
-        self._client = client or httpx.Client(base_url=settings.api_url, timeout=10.0)
+    def __init__(
+        self, client: httpx.AsyncClient | None = None, now: datetime | None = None
+    ) -> None:
+        headers = (
+            {"X-Internal-Token": settings.api_internal_token} if settings.api_internal_token else {}
+        )
+        self._client = client or httpx.AsyncClient(
+            base_url=settings.api_url, timeout=httpx.Timeout(10.0, connect=3.0), headers=headers
+        )
         self._now = now
 
-    def execute(self, name: str, arguments: str | dict[str, Any] | None) -> ToolResult:
-        handler = self._handlers().get(name)
-        if handler is None:
+    async def execute(
+        self,
+        name: str,
+        arguments: str | dict[str, Any] | None,
+        location: tuple[float, float] | None = None,
+    ) -> ToolResult:
+        model = ARG_MODELS.get(name)
+        if model is None:
             return _error(f"Unknown tool: {name}")
 
         try:
-            args = json.loads(arguments) if isinstance(arguments, str) else (arguments or {})
+            raw = json.loads(arguments) if isinstance(arguments, str) else (arguments or {})
         except json.JSONDecodeError:
             return _error("Invalid tool arguments")
-        if not isinstance(args, dict):
+        if not isinstance(raw, dict):
             return _error("Invalid tool arguments")
 
         try:
-            return handler(args)
-        except (KeyError, TypeError, ValueError):
+            args = model.model_validate(_restore_exact_point(raw, location))
+        except ValidationError:
             return _error("Invalid tool arguments")
+        return await self._dispatch(name, args)
 
-    def _handlers(self) -> dict:
-        return {
-            "geocode": lambda a: self._get("/geocode", {"q": a["query"]}),
-            "reverse_geocode": lambda a: self._get(
-                "/reverse", {"lat": float(a["lat"]), "lon": float(a["lon"])}
-            ),
-            "get_warnings": lambda a: self._get("/warnings", _point(a)),
-            "get_water_levels": lambda a: self._get("/water-levels"),
-            "get_air_quality": lambda a: self._get("/air-quality", _point(a)),
-            "get_power_outages": lambda a: self._get("/power-outages", _point(a)),
-            "find_nearest_shelter": lambda a: self._get(
-                "/shelters/nearest",
-                {"lat": float(a["lat"]), "lon": float(a["lon"]), "limit": int(a.get("limit", 3))},
-            ),
-            "get_guide": self._guide,
-        }
+    async def _dispatch(self, name: str, args: Any) -> ToolResult:
+        if name == "geocode":
+            return await self._get("/geocode", {"q": args.query})
+        if name == "reverse_geocode":
+            return await self._get("/reverse", {"lat": args.lat, "lon": args.lon})
+        if name == "get_water_levels":
+            return await self._get("/water-levels")
+        if name == "find_nearest_shelter":
+            params = {"lat": args.lat, "lon": args.lon, "limit": args.limit}
+            return await self._get("/shelters/nearest", params)
+        if name == "get_guide":
+            return await self._get(f"/guide/{args.topic}")
+        path = {
+            "get_warnings": "/warnings",
+            "get_air_quality": "/air-quality",
+            "get_power_outages": "/power-outages",
+        }[name]
+        point = (
+            {"lat": args.lat, "lon": args.lon}
+            if args.lat is not None and args.lon is not None
+            else None
+        )
+        return await self._get(path, point)
 
-    def _guide(self, args: dict[str, Any]) -> ToolResult:
-        topic = args["topic"]
-        if topic not in GUIDE_TOPICS:
-            return _error(f"Unknown guide topic, use one of: {', '.join(GUIDE_TOPICS)}")
-        return self._get(f"/guide/{topic}")
-
-    def _get(self, path: str, params: dict[str, Any] | None = None) -> ToolResult:
+    async def _get(self, path: str, params: dict[str, Any] | None = None) -> ToolResult:
         try:
-            response = self._client.get(path, params=params)
+            response = await self._client.get(path, params=params)
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError):
             return _error(NO_DATA_MESSAGE)
 
         if not _is_envelope(payload):
-            return ToolResult(content=json.dumps(payload, ensure_ascii=False), payload=payload)
+            content = truncate_texts(payload)
+            return ToolResult(content=json.dumps(content, ensure_ascii=False), payload=payload)
 
         now = self._now or datetime.now(UTC)
-        enriched = dict(payload)
+        enriched = truncate_texts(dict(payload))
         if enriched["data"] is None:
             enriched["note"] = NO_DATA_MESSAGE
         if enriched.get("is_stale"):
@@ -200,9 +327,3 @@ class ToolExecutor:
             sources=[source],
             payload=payload,
         )
-
-
-def _point(args: dict[str, Any]) -> dict[str, float] | None:
-    if args.get("lat") is None or args.get("lon") is None:
-        return None
-    return {"lat": float(args["lat"]), "lon": float(args["lon"])}

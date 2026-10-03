@@ -33,6 +33,20 @@ class Settings:
             "https://danepubliczne.imgw.pl/api/data/warningsmeteo",
         )
         self.krakow_teryt = os.getenv("KRAKOW_TERYT", "1261")
+        self.nominatim_url = os.getenv("NOMINATIM_URL", "https://nominatim.openstreetmap.org")
+        self.nominatim_user_agent = os.getenv(
+            "NOMINATIM_USER_AGENT",
+            "KryzIO/1.0 (HackYeah2026; https://github.com/Ajek1993/HackYeah2026)",
+        )
+        self.gios_api_url = os.getenv("GIOS_API_URL", "https://api.gios.gov.pl/pjp-api/v1/rest")
+        self.airly_api_url = os.getenv("AIRLY_API_URL", "https://airapi.airly.eu/v2")
+        self.airly_api_key = os.getenv("AIRLY_API_KEY", "")
+        # Protects the public geocoder endpoints and the Nominatim quota (audit A4)
+        self.geocode_rate_limit_per_minute = int(os.getenv("GEOCODE_RATE_LIMIT_PER_MINUTE", "30"))
+        # Shared with the agent, whose calls (one container IP for all users) skip that limit
+        self.internal_token = os.getenv("API_INTERNAL_TOKEN", "")
+        # "production" hides /docs and /openapi.json
+        self.app_env = os.getenv("APP_ENV", "development")
 
 
 settings = Settings()
