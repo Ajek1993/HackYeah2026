@@ -34,6 +34,8 @@ services:
   frontend:
     build: ./frontend
     env_file: .env
+    environment:
+      VITE_USE_POLLING: "true"
     ports:
       - "5173:5173"
     volumes:
