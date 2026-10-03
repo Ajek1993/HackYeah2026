@@ -21,7 +21,7 @@
 
 **Wymagania:** Docker + Docker Compose v2, Make, Python 3.12, Node 22 LTS, PostgreSQL 16 (obraz)
 
-**Zmienne środowiskowe** (`.env`, wzór w `.env.example`): `GLM_API_KEY`, `GLM_MODEL`, `AIRLY_API_KEY`, `DATABASE_URL`, `API_URL`, `AGENT_URL`, `CORS_ORIGINS`, `DEMO_MODE`, `VITE_API_URL`, `VITE_AGENT_URL`, `VITE_DEMO_MODE`
+**Zmienne środowiskowe** (`.env`, minimalny zestaw w README): `GLM_API_KEY`, `GLM_MODEL`, `AIRLY_API_KEY`, `DATABASE_URL`, `API_URL`, `AGENT_URL`, `CORS_ORIGINS`, `DEMO_MODE`, `VITE_API_URL`, `VITE_AGENT_URL`, `VITE_DEMO_MODE`
 
 ## Struktura (skrót)
 
@@ -37,7 +37,6 @@
 │   └── tests/
 ├── docker-compose.yml
 ├── Makefile
-├── .env.example
 └── README.md
 ```
 
@@ -63,7 +62,7 @@
 - Brak danych → agent odpowiada „Brak danych”; dane > 3h → oznaczenie „dane sprzed X godz.”
 - Adres poza Krakowem → „KryzIO działa na razie tylko na terenie Krakowa”
 - Zagrożenie życia → baner „Dzwoń 112” (LLM + fallback słów kluczowych na froncie)
-- Nowe zmienne środowiskowe dopisuj do `.env.example` (bez wartości sekretów)
+- Nowe zmienne środowiskowe dostają domyślną wartość w `config`; wymagane dopisuj do sekcji `.env` w README (bez wartości sekretów)
 - Kod, komentarze, nazwy, commity po angielsku; UI po polsku
 - Czcionka bazowa min. 18px, kontrast WCAG AA
 - Źródła danych i zewnętrzne API dopisuj do README (wymóg ujawnienia HackYeah)
@@ -86,7 +85,7 @@
 - Nigdy nie commituj przykładowych rozmów z prawdziwymi danymi osobowymi
 - Nigdy nie pozwalaj agentowi podawać danych, których nie zwróciło narzędzie (żadnych „przewidywań” zalania z głowy modelu)
 - Nigdy nie przedstawiaj KryzIO jako zastępstwa systemu państwowego (RCB, 112)
-- Nigdy nie włączaj trybu Demo domyślnie (`DEMO_MODE=false` w `.env.example`); dane symulowane zawsze oznaczone SYMULACJA
+- Nigdy nie włączaj trybu Demo domyślnie (`DEMO_MODE` domyślnie `false` w `api/app/config.py`); dane symulowane zawsze oznaczone SYMULACJA
 - Nigdy nie przekraczaj rate limitów źródeł (Airly co 2h, pozostałe co 30 min)
 - Nigdy nie dodawaj `Co-Authored-By` ani oznaczeń Claude Code w git
 - Nigdy nie commituj ani nie pushuj automatycznie bez prośby autora

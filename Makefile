@@ -3,7 +3,7 @@ COMPOSE := docker compose
 .PHONY: env up down logs ps test test-api test-agent test-frontend lint format seed celery-logs
 
 env:
-	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example - fill in API keys")
+	@test -f .env || (echo "Missing .env - create it as described in README (Getting started)" && exit 1)
 
 up: env
 	$(COMPOSE) up -d --build

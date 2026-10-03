@@ -45,13 +45,24 @@ API contract: [`docs_ai/api-contract.md`](docs_ai/api-contract.md). Planning doc
 Requirements: Docker with Compose v2, Make.
 
 ```bash
-make up          # creates .env from .env.example if missing, builds and starts all containers
+make up          # builds and starts all containers (needs .env, see below)
 make test        # api + agent (pytest) and frontend (vitest)
 make lint        # ruff + oxlint
 make down
 ```
 
-Fill in `GLM_API_KEY` (and optionally `AIRLY_API_KEY`) in `.env`, and set `API_INTERNAL_TOKEN` to a random string shared by `api` and `agent`. The default `GLM_BASE_URL` targets the GLM Coding Plan endpoint; pay-as-you-go keys use `https://api.z.ai/api/paas/v4/`.
+Create `.env` in the repo root before the first `make up`:
+
+```dotenv
+GLM_API_KEY=
+API_INTERNAL_TOKEN=
+POSTGRES_USER=kryzio
+POSTGRES_PASSWORD=
+POSTGRES_DB=kryzio
+DATABASE_URL=postgresql://kryzio:<POSTGRES_PASSWORD>@db:5432/kryzio
+```
+
+`API_INTERNAL_TOKEN` is a random string shared by `api` and `agent`. Everything else has a default in `api/app/config.py`, `agent/app/config.py` and `frontend/src/config/env.ts`; override it in `.env` when needed, e.g. `AIRLY_API_KEY` for Airly readings, `GLM_MODEL` / `GLM_BASE_URL` for the LLM, or the `DEMO_*` and `VITE_DEMO_*` variables for demo mode. The default `GLM_BASE_URL` targets the GLM Coding Plan endpoint; pay-as-you-go keys use `https://api.z.ai/api/paas/v4/`.
 
 | Service | URL |
 |---------|-----|
@@ -83,7 +94,7 @@ The proxy config lives on the server, outside the repo. It routes `/api/` and `/
 
 ```bash
 cp deploy/docker-compose.prod.yml docker-compose.prod.yml   # the root copy is ignored by git
-# .env: see .env.prod.example (APP_ENV=production, random secrets, public VITE_* URLs)
+# .env: as in Getting started, plus APP_ENV=production, CORS_ORIGINS and public VITE_API_URL / VITE_AGENT_URL
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
