@@ -10,18 +10,18 @@
 - README, `.gitignore`, `.env.example`, `docs_ai/` z artefaktami PAF (PRD, SPEC)
 - **Gotowe gdy:** pierwszy commit zatwierdzony przez autora i wypchnięty
 
-### T02 — Kontrakt API `api` ↔ `agent` / `frontend` · `review` · [A]+[B]
+### T02 — Kontrakt API `api` ↔ `agent` / `frontend` · `done` · [A]+[B]
 - Spisać w `docs_ai/api-contract.md` endpointy i kształt JSON (bez implementacji): `GET /health`, `GET /warnings?lat&lon`, `GET /water-levels`, `GET /air-quality?lat&lon`, `GET /power-outages?lat&lon`, `GET /shelters/nearest?lat&lon`, `GET /shelters`, `GET /guide/{topic}`, `GET /geocode?q`, `GET /summary`, `GET /demo/scenarios`, `POST /demo/activate/{id}`
 - Każdy odczyt danych zwraca `source`, `updated_at`, `is_stale`, `is_simulated`
 - **Gotowe gdy:** obie strony zaakceptowały plik; agent i front mogą mockować odpowiedzi
 
-### T03 — docker-compose + Makefile + szkielety kontenerów · `review` · [B → zrobione przez Claude na prośbę autora]
+### T03 — docker-compose + Makefile + szkielety kontenerów · `done` · [B → zrobione przez Claude na prośbę autora]
 - 4 serwisy: `frontend`, `api`, `agent`, `db` (PostgreSQL 16); `api` i `agent` z `GET /health`
 - Makefile: `up`, `down`, `logs`, `test`, `test-api`, `test-agent`, `test-frontend`, `lint`, `format`, `seed`
 - Po jednym przykładowym teście w `api/tests`, `agent/tests`, `frontend`
 - **Gotowe gdy:** `make up` stawia 4 kontenery, `curl localhost:8000/health` i `:8001/health` → 200, `make test` i `make lint` przechodzą
 
-### T04 — Szkielet frontendu · `review` · [A]
+### T04 — Szkielet frontendu · `done` · [A]
 - Vite + React + TS + Tailwind; zakładki **Czat** (start), **Mapa**, **Demo** (tylko gdy `VITE_DEMO_MODE=true`)
 - Motyw: czcionka bazowa 18px, kontrast WCAG AA; stopka z numerami alarmowymi (F13)
 - Design przez skill `frontend-design`
@@ -68,26 +68,26 @@
 
 ## Faza 2 — Agent (autor; równolegle z fazą 1 na mockach z T02)
 
-### T14 — Klient GLM 5.3 + system prompt · `review` · [A]
+### T14 — Klient GLM 5.3 + system prompt · `done` · [A]
 - Klient z tool calling, limit tokenów w konfiguracji; system prompt: tylko dane z narzędzi, „Brak danych”, sekcje sytuacja / przed / w trakcie / po, dopisek o służbach, off-topic maks. 2 zdania, tylko Kraków, po polsku
 - **Gotowe gdy:** test z zamockowanym GLM sprawdza obecność zasad w prompcie i limit tokenów
 
-### T15 — Narzędzia agenta · `review` · [A]
+### T15 — Narzędzia agenta · `done` · [A]
 - `geocode`, `get_warnings`, `get_water_levels`, `get_air_quality`, `get_power_outages`, `find_nearest_shelter`, `get_guide` — wołają `api`
 - **Gotowe gdy:** testy narzędzi na zamockowanym `api` (w tym `is_stale`, brak danych)
 
-### T16 — Endpoint czatu z pamięcią sesji · `review` · [A]
+### T16 — Endpoint czatu z pamięcią sesji · `done` · [A]
 - `POST /chat` z `session_id`; kontekst (adres, skład gospodarstwa) w pamięci procesu z TTL, bez zapisu do db i logów
 - Odpowiedź strukturalna: `answer`, `sources[]`, `emergency` (bool), `out_of_area` (bool)
 - **Gotowe gdy:** test: drugie pytanie w sesji korzysta z adresu z pierwszego; brak logowania treści
 
-### T17 — Reguły specjalne · `review` · [A]
+### T17 — Reguły specjalne · `done` · [A]
 - Adres poza Krakowem → stały komunikat zasięgu; zagrożenie życia → `emergency=true`; błąd/timeout GLM → komunikat „Agent chwilowo niedostępny”
 - **Gotowe gdy:** testy dla wszystkich trzech przypadków
 
 ## Faza 3 — Frontend (autor)
 
-### T18 — Czat · `todo` · [A]
+### T18 — Czat · `review` · [A]
 - Okno czatu, wskaźnik „agent pisze…”, źródła z godziną pod odpowiedzią, oznaczenie „dane sprzed X godz.”, dopisek o służbach, `session_id` w `sessionStorage`
 - **Gotowe gdy:** pytanie o Kobierzyńską zwraca odpowiedź ze źródłami end-to-end
 
@@ -160,15 +160,23 @@
 - T17: zasięg — `geocode` z `found: true, in_krakow: false` (i żadnym miejscem w Krakowie) przerywa pętlę bez kolejnej rundy GLM i zwraca stały komunikat (bez sekcji, źródeł, dopisku); flaga `out_of_area` od modelu też wymusza stały komunikat; zagrożenie życia — `emergency` od modelu (fallback słów kluczowych: front, T19); `LLMUnavailableError` → `503 {"error": "agent_unavailable", "message": "Agent chwilowo niedostępny"}`, pytanie nie trafia do sesji; fixture `make_client` przeniesiona do `tests/conftest.py`; pytest agent 66/66, ruff OK; na żywym GLM: „woda wlewa się do piwnicy…” → `emergency: true`, odpowiedź zaczyna się od „Dzwoń 112” (13 s)
 - Po review T17 (decyzja autora: „sam poradnik, 112 + RCB”): prompt zakazuje własnych kroków także przy `emergency`; dodatkowo w kodzie — `emergency` bez danych z `get_guide` → stały komunikat `EMERGENCY_NO_GUIDE_MESSAGE` („Dzwoń 112. Brak danych z poradnika bezpieczeństwa — postępuj według poleceń służb i śledź komunikaty RCB.”), bo sam prompt łamany był w 2 na 3 próbach; pytest agent 69/69
 
+- Faza 0 i faza 2 zaakceptowane przez autora (review po fazie) — T02–T04, T14–T17 `done`; kontrakt API (T02) zaakceptowany
+
+- `make` zainstalowany (GNU Make 4.4.1, Chocolatey); `make test-agent` z Git Basha OK
+
+### Faza 3 — postęp
+- T18: `src/api/chat.ts` (klient `POST /chat` / `DELETE /chat/{id}`, typy z kontraktu), `src/hooks/useChat.ts` (wymiany pytanie–odpowiedź, retry, reset), `src/components/chat/` (`ExchangeView`, `ActionPlan` — przed / w trakcie / po jako trasa ewakuacyjna, `SourceList` — źródło + godzina + „dane sprzed X godz.”, `RichText` — minimalny Markdown bez `innerHTML`), `src/lib/time.ts` (czas Kraków); komunikat oczekiwania z `aria-live`, błąd 503 / brak sieci → komunikat + wskazówka 112 + „Spróbuj ponownie”; „Nowa rozmowa” czyści sesję w agencie; vitest 17/17, oxlint OK, build OK; brak zrzutów ekranu (rozszerzenie Chrome niepołączone)
+- Hot reload frontendu w Dockerze na Windows nie działał (bind mount nie przekazuje zdarzeń plików) — `VITE_USE_POLLING=true` w `docker-compose.yml` + `server.watch.usePolling` w `vite.config.ts`
+
 ### Odstępstwa
 - Lint frontendu: `oxlint` (domyślny w szablonie Vite) zamiast `eslint`
 - Zakładka czatu nazwana „Zapytaj” (czytelniej niż „Czat”)
+- T18: `session_id` w pamięci strony zamiast `sessionStorage` — PRD Story 1 wymaga, by odświeżenie strony czyściło kontekst (`sessionStorage` przetrwałby odświeżenie)
+- T18: gdy agent zwraca `sections`, front pokazuje plan działania zamiast `answer` (treść się dubluje)
 - T14: dopisek o służbach dokleja kod (`DISCLAIMER`), nie LLM — gwarancja obecności w każdej odpowiedzi; prompt zabrania go powtarzać i przedstawiać KryzIO jako zastępstwo służb
 - T14: prompt po angielsku (zasada: kod po angielsku), stałe komunikaty i odpowiedzi po polsku; model zwraca JSON (`answer`, `sections`, `emergency`, `out_of_area`, `off_topic`), a `sources` w T16 zbierane będą z odpowiedzi narzędzi, nie od modelu
 
 ### Do decyzji autora
-- Brak `make` w środowisku Windows (Git Bash) — Makefile z T03 wymaga instalacji make (np. `choco install make`) lub WSL
-- Akceptacja kontraktu API przez backend
 - Treść nowego stałego komunikatu `EMERGENCY_NO_GUIDE_MESSAGE` do akceptacji
 - T16: czas odpowiedzi — każda runda GLM 4–9 s; przy działającym `api` typowo 3 rundy (geocode → dane równolegle → odpowiedź) ≈ 15 s; dalsze opcje: usunąć dublowanie `answer` + `sections` w JSON (mniej tokenów) albo streaming odpowiedzi
 
