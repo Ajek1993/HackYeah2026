@@ -15,6 +15,7 @@ import {
 } from '../api/data'
 import { formatDistance } from '../lib/distance'
 import { requestLocation } from '../lib/geolocation'
+import { googleMapsDirectionsUrl, NAVIGATE_LABEL, NEW_TAB_HINT } from '../lib/navigation'
 import { LeafletMap, type LayerId, type MapPoint } from './map/LeafletMap'
 import { SummaryTiles } from './map/SummaryTiles'
 
@@ -195,6 +196,16 @@ export function MapView() {
                       {formatDistance(found.nearest.distance_m)} od podanego adresu
                     </p>
                   )}
+                  <a
+                    href={googleMapsDirectionsUrl(found.nearest, found.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex min-h-12 items-center gap-2 rounded-lg bg-vistula px-5 font-semibold text-white hover:bg-vistula-deep"
+                  >
+                    {NAVIGATE_LABEL}
+                    <ExternalIcon />
+                    <span className="sr-only">{NEW_TAB_HINT}</span>
+                  </a>
                 </>
               ) : (
                 <p>
@@ -235,6 +246,20 @@ export function MapView() {
         <MapTextList warnings={warnings} outages={outages} />
       </div>
     </section>
+  )
+}
+
+function ExternalIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="size-5" aria-hidden="true" fill="none">
+      <path
+        d="M11 3h6v6M17 3l-8 8M8 5H4v11h11v-4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
 
@@ -281,6 +306,7 @@ function MapTextList({ warnings, outages }: { warnings: Warning[]; outages: Powe
           {outages.map((outage) => (
             <li key={outage.id}>
               {outage.planned ? 'Planowane wyłączenie' : 'Awaria'}: {outage.area}
+              {outage.location_precision === 'approximate' && ' (lokalizacja przybliżona)'}
             </li>
           ))}
         </ul>

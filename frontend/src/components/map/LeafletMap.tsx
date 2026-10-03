@@ -3,6 +3,8 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef } from 'react'
 import type { PowerOutage, Shelter, Warning } from '../../api/data'
 import { formatDistance } from '../../lib/distance'
+import { googleMapsDirectionsUrl, NAVIGATE_LABEL, NEW_TAB_HINT } from '../../lib/navigation'
+import { APPROXIMATE_NOTE, groupOutages, outageCount, outageTitle } from '../../lib/outages'
 
 export type LayerId = 'warnings' | 'power' | 'shelters'
 
@@ -39,6 +41,12 @@ function escape(text: string): string {
   const div = document.createElement('div')
   div.textContent = text
   return div.innerHTML
+}
+
+// Popup link to walking directions; starts from the searched address when there is one
+function navigateLink(shelter: Shelter, origin: MapPoint | null): string {
+  const href = escape(googleMapsDirectionsUrl(shelter, origin))
+  return `<p style="margin:8px 0 0"><a href="${href}" target="_blank" rel="noopener noreferrer" class="kryzio-navigate">${NAVIGATE_LABEL}<span class="sr-only"> ${NEW_TAB_HINT}</span></a></p>`
 }
 
 export function LeafletMap({ warnings, outages, shelters, visible, address, nearest }: Props) {
@@ -94,17 +102,29 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
     const group = layers.current?.power
     if (!group) return
     group.clearLayers()
-    for (const outage of outages) {
-      if (outage.lat == null || outage.lon == null) continue
-      L.circleMarker([outage.lat, outage.lon], {
-        radius: 9,
-        color: '#ffffff',
+    for (const point of groupOutages(outages)) {
+      const items = point.outages
+        .map(
+          (outage) => `<li><strong>${outageTitle(outage)}</strong><br>${escape(outage.area)}</li>`,
+        )
+        .join('')
+      const count =
+        point.outages.length > 1 ? `<strong>${outageCount(point.outages.length)}</strong>` : ''
+      const note = point.approximate
+        ? `<p style="margin:0 0 6px"><em>${APPROXIMATE_NOTE}</em></p>`
+        : ''
+      // A district centre is not where the power is off: dashed, translucent marker
+      L.circleMarker([point.lat, point.lon], {
+        radius: point.approximate ? 14 : 9,
+        color: point.approximate ? '#8a5a00' : '#ffffff',
         weight: 2,
+        dashArray: point.approximate ? '4 4' : undefined,
         fillColor: '#8a5a00',
-        fillOpacity: 1,
+        fillOpacity: point.approximate ? 0.35 : 1,
       })
         .bindPopup(
-          `<strong>${outage.planned ? 'Planowane wyłączenie prądu' : 'Awaria prądu'}</strong><br>${escape(outage.area)}`,
+          `${note}${count}<ul style="margin:4px 0 0;padding-left:18px;max-height:220px;overflow-y:auto">${items}</ul>`,
+          { maxWidth: 320 },
         )
         .addTo(group)
     }
@@ -117,10 +137,12 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
     for (const shelter of shelters) {
       if (shelter.id === nearest?.id) continue
       L.marker([shelter.lat, shelter.lon], { icon: shelterIcon(false), title: shelter.name })
-        .bindPopup(`<strong>${escape(shelter.name)}</strong><br>${escape(shelter.address)}`)
+        .bindPopup(
+          `<strong>${escape(shelter.name)}</strong><br>${escape(shelter.address)}${navigateLink(shelter, address)}`,
+        )
         .addTo(group)
     }
-  }, [shelters, nearest])
+  }, [shelters, nearest, address])
 
   useEffect(() => {
     const instance = map.current
@@ -150,19 +172,21 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
       const distance = nearest.distance_m != null ? `, ${formatDistance(nearest.distance_m)}` : ''
       L.marker(shelterPoint, { icon: shelterIcon(true), title: nearest.name, zIndexOffset: 900 })
         .bindPopup(
-          `<strong>${escape(nearest.name)}</strong>${distance}<br>${escape(nearest.address)}`,
+          `<strong>${escape(nearest.name)}</strong>${distance}<br>${escape(nearest.address)}${navigateLink(nearest, address)}`,
         )
         .addTo(pins)
     }
     instance.fitBounds(L.latLngBounds(points), { padding: [48, 48], maxZoom: 16 })
   }, [address, nearest])
 
+  // Leaflet panes use z-index 400-1000; `isolate` keeps them under the sticky
+  // emergency bar and simulation banner
   return (
     <div
       ref={container}
       role="region"
       aria-label="Mapa Krakowa z zagrożeniami i schronami"
-      className="h-[60vh] min-h-80 w-full overflow-hidden rounded-xl border border-line"
+      className="isolate h-[60vh] min-h-80 w-full overflow-hidden rounded-xl border border-line"
     />
   )
 }

@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from app import mapping
+from app.demo.state import ScenarioDep
 from app.envelope import envelope
 from app.repo import Repo, get_repo
 
@@ -40,9 +41,13 @@ async def nearest_shelters(
 
 
 @router.get("/warnings")
-async def warnings(repo: RepoDep, lat: Lat = None, lon: Lon = None) -> dict:
+async def warnings(repo: RepoDep, scenario: ScenarioDep, lat: Lat = None, lon: Lon = None) -> dict:
     # Kraków-wide: IMGW warnings cover catchments and districts, not single addresses
     name, url = mapping.SOURCES["imgw"]
+    if scenario:
+        name, url = scenario.data.warnings_source
+        data = [mapping.warning(r) for r in scenario.data.warnings]
+        return envelope(name, url, scenario.data.updated_at, data, simulated=True)
     rows = await repo.krakow_warnings()
     return envelope(
         name, url, await repo.last_fetch("imgw_warnings"), [mapping.warning(r) for r in rows]
@@ -50,8 +55,11 @@ async def warnings(repo: RepoDep, lat: Lat = None, lon: Lon = None) -> dict:
 
 
 @router.get("/water-levels")
-async def water_levels(repo: RepoDep) -> dict:
+async def water_levels(repo: RepoDep, scenario: ScenarioDep) -> dict:
     name, url = mapping.SOURCES["imgw"]
+    if scenario:
+        data = [mapping.water_level(r) for r in scenario.data.water]
+        return envelope(name, url, scenario.data.updated_at, data, simulated=True)
     rows = await repo.krakow_water_levels()
     return envelope(
         name, url, await repo.last_fetch("hydro_stations"), [mapping.water_level(r) for r in rows]
@@ -59,8 +67,13 @@ async def water_levels(repo: RepoDep) -> dict:
 
 
 @router.get("/power-outages")
-async def power_outages(repo: RepoDep, lat: Lat = None, lon: Lon = None) -> dict:
+async def power_outages(
+    repo: RepoDep, scenario: ScenarioDep, lat: Lat = None, lon: Lon = None
+) -> dict:
     name, url = mapping.SOURCES["tauron"]
+    if scenario:
+        data = [mapping.power_outage(r) for r in scenario.data.outages]
+        return envelope(name, url, scenario.data.updated_at, data, simulated=True)
     rows = await repo.krakow_power_outages()
     return envelope(
         name, url, await repo.last_fetch("power_outages"), [mapping.power_outage(r) for r in rows]
@@ -68,7 +81,14 @@ async def power_outages(repo: RepoDep, lat: Lat = None, lon: Lon = None) -> dict
 
 
 @router.get("/air-quality")
-async def air_quality(repo: RepoDep, lat: Lat = None, lon: Lon = None) -> dict:
+async def air_quality(
+    repo: RepoDep, scenario: ScenarioDep, lat: Lat = None, lon: Lon = None
+) -> dict:
+    if scenario:
+        row = scenario.data.air
+        name, url = mapping.SOURCES[row["provider"]]
+        data = mapping.air_quality(row)
+        return envelope(name, url, scenario.data.updated_at, data, simulated=True)
     point = (lat, lon) if lat is not None and lon is not None else KRAKOW_CENTER
     row = await repo.freshest_air_quality(*point)
     if row is None:

@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app import mapping
+from app.demo.state import ActiveScenario, ScenarioDep
 from app.envelope import is_stale
 from app.repo import Repo, get_repo
 from app.routers.data import KRAKOW_CENTER
@@ -44,8 +45,9 @@ def tile(kind: str, status: str, headline: str, source: str, updated_at: datetim
     }
 
 
-def warnings_tile(rows: list[dict], updated_at: datetime | None) -> dict:
-    source = mapping.SOURCES["imgw"][0]
+def warnings_tile(
+    rows: list[dict], updated_at: datetime | None, source: str = mapping.SOURCES["imgw"][0]
+) -> dict:
     if not rows:
         return tile("warnings", "ok", "Brak ostrzeżeń IMGW dla Krakowa", source, updated_at)
     count = len(rows)
@@ -89,8 +91,25 @@ def power_tile(rows: list[dict], updated_at: datetime | None) -> dict:
     return tile("power", "warning", f"{count} {noun} prądu", source, updated_at)
 
 
+def simulated_tiles(active: ActiveScenario) -> list[dict]:
+    data, at = active.data, active.data.updated_at
+    tiles = [
+        warnings_tile(data.warnings, at, data.warnings_source[0]),
+        water_tile(data.water, at),
+        air_tile(data.air, at),
+        power_tile(data.outages, at),
+    ]
+    return [{**t, "source": f"{t['source']} (symulacja)", "is_simulated": True} for t in tiles]
+
+
 @router.get("/summary")
-async def summary(repo: RepoDep) -> dict:
+async def summary(repo: RepoDep, scenario: ScenarioDep) -> dict:
+    if scenario:
+        return {
+            "generated_at": datetime.now(UTC).isoformat(),
+            "demo_scenario": scenario.id,
+            "tiles": simulated_tiles(scenario),
+        }
     air = await repo.freshest_air_quality(*KRAKOW_CENTER)
     return {
         "generated_at": datetime.now(UTC).isoformat(),

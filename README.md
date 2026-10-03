@@ -19,7 +19,7 @@ Work in progress — repository skeleton. Planning documents live in [`docs_ai/`
 | `agent` | Python 3.12 + FastAPI, GLM 5.3 (tool calling) | Conversational agent using `api` as its only data source |
 | `db` | PostgreSQL 16 | Cache of source readings, shelters |
 
-Deployment: `frontend` on Vercel, `api` + `agent` + `db` via Docker Compose on a VPS.
+Deployment: everything on the team's VPS via Docker Compose, behind a reverse proxy with HTTPS that also serves the static `frontend` build.
 
 ## Getting started
 
@@ -47,6 +47,7 @@ The database schema (`db/init/`) is applied only when the `pgdata` volume is cre
 ```bash
 docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/01-schema.sql'
 docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/02-air-quality.sql'
+docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/03-outage-streets.sql'
 ```
 
 Load the data right after the first start (Kraków boundary, shelters, Tauron, IMGW, GIOŚ); afterwards Celery beat refreshes it on its own:
@@ -55,7 +56,7 @@ Load the data right after the first start (Kraków boundary, shelters, Tauron, I
 make seed
 ```
 
-The Demo tab (simulated scenarios) is visible only with `VITE_DEMO_MODE=true` and is meant for presentations only.
+The Demo tab (simulated scenarios) is visible only with `VITE_DEMO_MODE=true` and is meant for presentations only. The `api` needs `DEMO_MODE=true` and a random `DEMO_ADMIN_TOKEN` (sent as `X-Demo-Token` to switch scenarios; the frontend reads it from `VITE_DEMO_TOKEN`, which ends up in the bundle); an active scenario switches back to real data after `DEMO_TTL_MINUTES`.
 
 ## Data sources
 

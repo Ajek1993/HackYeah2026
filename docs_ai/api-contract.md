@@ -152,11 +152,13 @@ Freshest reading from GIOŚ or Airly (conflict rule: freshest wins). Envelope `s
       "area": "Kraków, ul. Kobierzyńska 1-50",
       "start": "...",
       "end": "...",
-      "lat": 50.03, "lon": 19.92
+      "lat": 50.03, "lon": 19.92,
+      "location_precision": "street"
     }
   ]
 }
 ```
+- `location_precision`: `exact` (coordinates from Tauron) | `street` (first address of the message geocoded with Nominatim) | `approximate` (Tauron gave only the power district centre, for Kraków: Rynek Główny)
 
 ### `GET /shelters`
 ```json
@@ -212,8 +214,13 @@ Data for the map tab tiles — one request, all sources.
 ### Demo (only when `DEMO_MODE=true`, otherwise `404`)
 
 - `GET /demo/scenarios` → `[{"id": "flood", "title": "Powódź"}, {"id": "power_outage", "title": "Brak prądu"}, {"id": "bomb_threat", "title": "Atak bombowy"}]`
-- `POST /demo/activate/{id}` → `{"active": "flood"}`; while active, data endpoints return simulated data with `is_simulated: true`
-- `POST /demo/deactivate` → `{"active": null}`
+- `POST /demo/activate/{id}` → `{"active": "flood", "expires_at": "2026-10-04T11:00:00+02:00"}`; unknown id → `404`
+- `POST /demo/deactivate` → `{"active": null, "expires_at": null}`
+- `GET /demo/active` → same shape; lets the frontend restore the banner after a reload
+- Both `POST` endpoints require the header `X-Demo-Token: <DEMO_ADMIN_TOKEN>`, otherwise `403` (also when the token is not configured)
+- The scenario is global (affects every client, including the agent) and switches back to real data after `DEMO_TTL_MINUTES` (default 30)
+- While active, `/warnings`, `/water-levels`, `/power-outages`, `/air-quality` and `/summary` return simulated data: `is_simulated: true`, `source` with the suffix ` (symulacja)` (warnings in `bomb_threat` come from `RCB`), `updated_at` = activation time; `/summary` sets `demo_scenario` to the scenario id
+- Shelters, the safety guide and geocoding always stay real
 
 ## `agent` endpoints
 

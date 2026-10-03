@@ -80,7 +80,8 @@ def warning(row: dict) -> dict[str, Any]:
     areas = [a.strip() for a in row.get("area_descriptions") or [] if a and a.strip()]
     return {
         "id": row["warning_key"],
-        "kind": warning_kind(row["title"]),
+        # Demo scenarios set the kind explicitly (e.g. bomb_threat, absent from IMGW titles)
+        "kind": row.get("kind") or warning_kind(row["title"]),
         "level": warning_level(row.get("severity")),
         "title": row["title"],
         "description": row.get("body") or "",
@@ -116,6 +117,8 @@ def power_outage(row: dict) -> dict[str, Any]:
         "end": iso(row.get("end_at")),
         "lat": row.get("lat"),
         "lon": row.get("lon"),
+        # exact (Tauron coordinates) | street (geocoded first address) | approximate
+        "location_precision": row.get("location_precision", "exact"),
     }
 
 

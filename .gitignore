@@ -40,3 +40,5 @@ celerybeat-schedule
 celerybeat-schedule.db
 
 /docs
+/specs
+.claude

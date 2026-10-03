@@ -132,17 +132,25 @@ class Repo:
         )
 
     async def krakow_power_outages(self) -> list[dict]:
+        # Without exact coordinates `center` is the whole district's centre: prefer the
+        # geocoded first street of the message (app/sources/outage_streets.py)
         return await self._all(
-            f"""SELECT o.outage_id::text || '@' || to_char(o.start_at AT TIME ZONE 'UTC',
-                           'YYYY-MM-DD"T"HH24:MI"Z"') AS id,
-                       o.outage_kind, o.message, o.start_at, o.end_at,
-                       ST_Y(o.center) AS lat, ST_X(o.center) AS lon
-                  FROM power_outages o
-                 WHERE o.is_active
-                   AND (o.end_at IS NULL OR o.end_at > now())
-                   AND o.center IS NOT NULL
-                   AND {in_krakow_sql("o.center")}
-                 ORDER BY o.start_at"""
+            f"""SELECT id, outage_kind, message, start_at, end_at, precision AS location_precision,
+                       ST_Y(point) AS lat, ST_X(point) AS lon
+                  FROM (SELECT o.outage_id::text || '@' || to_char(o.start_at AT TIME ZONE 'UTC',
+                                   'YYYY-MM-DD"T"HH24:MI"Z"') AS id,
+                               o.outage_kind, o.message, o.start_at, o.end_at,
+                               CASE WHEN o.location_precision = 'dokladna' THEN 'exact'
+                                    WHEN o.street_center IS NOT NULL THEN 'street'
+                                    ELSE 'approximate' END AS precision,
+                               CASE WHEN o.location_precision = 'dokladna' THEN o.center
+                                    ELSE COALESCE(o.street_center, o.center) END AS point
+                          FROM power_outages o
+                         WHERE o.is_active
+                           AND (o.end_at IS NULL OR o.end_at > now())) outage
+                 WHERE outage.point IS NOT NULL
+                   AND {in_krakow_sql("outage.point")}
+                 ORDER BY start_at"""
         )
 
     async def freshest_air_quality(self, lat: float, lon: float) -> dict | None:

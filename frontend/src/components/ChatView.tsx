@@ -11,7 +11,12 @@ const QUICK_QUESTIONS = [
   'Co robić, gdy nie ma prądu?',
 ]
 
-export function ChatView() {
+type Props = {
+  /** Replaces the default questions, e.g. with ones fitting the running demo scenario */
+  quickQuestions?: string[]
+}
+
+export function ChatView({ quickQuestions = QUICK_QUESTIONS }: Props) {
   const { exchanges, pending, ask, retry, reset, locationStatus } = useChat()
   const [message, setMessage] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -55,7 +60,7 @@ export function ChatView() {
           <div>
             <h2 className="mb-3 text-base font-semibold text-ink-muted">Często zadawane pytania</h2>
             <ul className="grid gap-2 sm:grid-cols-2">
-              {QUICK_QUESTIONS.map((question) => (
+              {quickQuestions.map((question) => (
                 <li key={question}>
                   <button
                     type="button"

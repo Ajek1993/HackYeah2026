@@ -12,12 +12,11 @@ describe('App tabs', () => {
     expect(screen.queryByRole('tab', { name: 'Demo' })).not.toBeInTheDocument()
   })
 
-  it('shows the demo tab with a simulation banner when demo mode is on', async () => {
+  it('shows the demo tab marked as a presentation when demo mode is on', async () => {
     render(<App demoMode />)
     await userEvent.click(screen.getByRole('tab', { name: 'Demo' }))
-    expect(screen.getByRole('complementary', { name: 'Symulacja' })).toHaveTextContent(
-      'To nie jest prawdziwy alarm',
-    )
+    expect(screen.getByRole('heading', { name: 'Uruchom scenariusz' })).toBeInTheDocument()
+    expect(screen.getByText(/To nie jest prawdziwy alarm/)).toBeInTheDocument()
   })
 
   it('starts on the chat tab', () => {

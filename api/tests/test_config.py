@@ -10,6 +10,8 @@ class TestSettings:
             s = Settings()
             assert s.database_url == ""
             assert s.demo_mode is False
+            assert s.demo_admin_token == ""
+            assert s.demo_ttl_minutes == 30
             assert s.cors_origins == ["http://localhost:5173"]
             assert "dane.gov.pl" in s.shelters_csv_url
             assert "tauron" in s.tauron_api_url

@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import logging_filters
 from app.config import settings
 from app.db import create_pool
+from app.demo import router as demo
 from app.nominatim import Nominatim
 from app.routers import data, geo, guide, summary
 
@@ -44,6 +45,7 @@ app.include_router(data.router)
 app.include_router(geo.router)
 app.include_router(guide.router)
 app.include_router(summary.router)
+app.include_router(demo.router)
 
 
 @app.get("/health")
