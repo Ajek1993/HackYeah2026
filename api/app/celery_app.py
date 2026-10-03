@@ -1,4 +1,5 @@
-from celery import Celery
+from celery import Celery, chain, group
+from celery.signals import worker_ready
 
 from app.config import settings
 
@@ -58,3 +59,28 @@ app.conf.beat_schedule = {
         "schedule": 7200.0,
     },
 }
+
+
+# Sources refreshed right after the worker starts, so a fresh database (new volume,
+# redeploy) does not wait up to 2h for the first beat run. Airly skips itself without a key.
+STARTUP_SOURCES = [
+    "app.sources.shelters.fetch_shelters",
+    "app.sources.tauron.fetch_tauron_outages",
+    "app.sources.imgw.fetch_imgw_hydro",
+    "app.sources.imgw.fetch_imgw_warnings",
+    "app.sources.gios.fetch_gios_air_quality",
+    "app.sources.airly.fetch_airly_air_quality",
+]
+
+
+def startup_refresh():
+    # Boundary first: it filters every other source to Kraków
+    return chain(
+        app.signature("app.sources.boundary.fetch_krakow_boundary", immutable=True),
+        group(app.signature(name, immutable=True) for name in STARTUP_SOURCES),
+    )
+
+
+@worker_ready.connect
+def refresh_on_startup(**_kwargs) -> None:
+    startup_refresh().apply_async()
