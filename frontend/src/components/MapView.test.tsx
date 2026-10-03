@@ -222,10 +222,10 @@ describe('MapView', () => {
     serve(baseRoutes)
     render(<MapView />)
 
-    const shelters = screen.getByRole('checkbox', { name: 'Schrony i miejsca ukrycia' })
-    expect(shelters).toBeChecked()
-    await userEvent.click(shelters)
+    const shelters = screen.getByRole('checkbox', { name: 'Schrony i bezpieczne miejsca' })
     expect(shelters).not.toBeChecked()
+    await userEvent.click(shelters)
+    expect(shelters).toBeChecked()
   })
 })
 
