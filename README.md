@@ -79,11 +79,11 @@ The Demo tab is visible only with `VITE_DEMO_MODE=true` and is meant for present
 
 Production runs on a VPS with Docker Compose behind an nginx reverse proxy that terminates TLS. Templates:
 
-- [`deploy/docker-compose.prod.example.yml`](deploy/docker-compose.prod.example.yml) — no published ports, no bind mounts or `--reload`, `restart: unless-stopped`, static frontend from [`frontend/Dockerfile.prod`](frontend/Dockerfile.prod).
-- [`deploy/nginx-kryzio.example.conf`](deploy/nginx-kryzio.example.conf) — the edge proxy: `/api/` and `/agent/` prefixes, HSTS, query-free access log, `X-Forwarded-For` overwritten with the client address.
+- [`deploy/docker-compose.prod.yml`](deploy/docker-compose.prod.yml) — no published ports, no bind mounts or `--reload`, `restart: unless-stopped`, static frontend from [`frontend/Dockerfile.prod`](frontend/Dockerfile.prod).
+- [`deploy/kryzio.goveris.conf`](deploy/kryzio.goveris.conf) — the edge proxy: `/api/` and `/agent/` prefixes, HSTS, query-free access log, `X-Forwarded-For` overwritten with the client address.
 
 ```bash
-cp deploy/docker-compose.prod.example.yml docker-compose.prod.yml   # ignored by git
+cp deploy/docker-compose.prod.yml docker-compose.prod.yml   # the root copy is ignored by git
 # .env: see .env.prod.example (APP_ENV=production, random secrets, public VITE_* URLs)
 docker compose -f docker-compose.prod.yml up -d --build
 ```
