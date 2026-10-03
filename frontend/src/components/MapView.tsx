@@ -18,6 +18,7 @@ import { requestLocation } from '../lib/geolocation'
 import { googleMapsDirectionsUrl, NAVIGATE_LABEL, NEW_TAB_HINT } from '../lib/navigation'
 import { LeafletMap, type LayerId, type MapPoint } from './map/LeafletMap'
 import { SummaryTiles } from './map/SummaryTiles'
+import { WARNING_HATCH } from './map/warningHatch'
 
 const OUT_OF_AREA_MESSAGE = 'KryzIO działa na razie tylko na terenie Krakowa'
 
@@ -136,114 +137,117 @@ export function MapView() {
         </p>
       )}
 
-      <form onSubmit={handleSearch} className="flex flex-col gap-3">
-        <label htmlFor="address" className="font-semibold">
-          Znajdź najbliższy schron
-        </label>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <input
-            id="address"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="np. Kobierzyńska 1"
-            autoComplete="street-address"
-            className="min-h-14 flex-1 rounded-lg border-2 border-ink-muted bg-surface px-4 text-lg placeholder:text-ink-muted focus:border-vistula"
-          />
+      {/* Desktop: search and its result beside the map instead of above it */}
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
+        <form onSubmit={handleSearch} className="flex flex-col gap-3">
+          <label htmlFor="address" className="font-semibold">
+            Znajdź najbliższy schron
+          </label>
+          <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+            <input
+              id="address"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="np. Kobierzyńska 1"
+              autoComplete="street-address"
+              className="min-h-14 flex-1 rounded-lg border-2 border-ink-muted bg-surface px-4 text-lg placeholder:text-ink-muted focus:border-vistula"
+            />
+            <button
+              type="submit"
+              disabled={search.state === 'loading'}
+              className="min-h-14 rounded-lg bg-vistula px-6 text-lg font-semibold text-white hover:bg-vistula-deep disabled:opacity-60"
+            >
+              {search.state === 'loading' ? 'Szukam' : 'Pokaż na mapie'}
+            </button>
+          </div>
           <button
-            type="submit"
+            type="button"
+            onClick={handleUseLocation}
             disabled={search.state === 'loading'}
-            className="min-h-14 rounded-lg bg-vistula px-6 text-lg font-semibold text-white hover:bg-vistula-deep disabled:opacity-60"
+            className="min-h-12 self-start rounded-lg border-2 border-vistula bg-surface px-4 font-semibold text-vistula-deep hover:bg-vistula-soft disabled:opacity-60"
           >
-            {search.state === 'loading' ? 'Szukam' : 'Pokaż na mapie'}
+            Użyj mojej lokalizacji
           </button>
-        </div>
-        <button
-          type="button"
-          onClick={handleUseLocation}
-          disabled={search.state === 'loading'}
-          className="min-h-12 self-start rounded-lg border-2 border-vistula bg-surface px-4 font-semibold text-vistula-deep hover:bg-vistula-soft disabled:opacity-60"
-        >
-          Użyj mojej lokalizacji
-        </button>
-        <div aria-live="polite">
-          {search.state === 'not_found' && (
-            <p className="text-danger">
-              Nie znaleziono tego adresu. Wpisz ulicę z numerem, np. „Kobierzyńska 1”.
-            </p>
-          )}
-          {search.state === 'out_of_area' && (
-            <p className="font-semibold text-danger">{OUT_OF_AREA_MESSAGE}</p>
-          )}
-          {search.state === 'no_location' && (
-            <p className="text-danger">
-              Nie udało się ustalić lokalizacji. Zezwól na nią w przeglądarce albo wpisz adres.
-            </p>
-          )}
-          {search.state === 'error' && (
-            <p className="text-danger">
-              Wyszukiwanie jest chwilowo niedostępne. Spróbuj ponownie za chwilę.
-            </p>
-          )}
-          {found && (
-            <div className="rounded-lg border-2 border-civil bg-surface p-4">
-              {found.nearest ? (
-                <>
-                  <p className="text-base text-ink-muted">Najbliższy schron</p>
-                  <p className="text-xl font-extrabold">{found.nearest.name}</p>
-                  <p>{found.nearest.address}</p>
-                  {found.nearest.distance_m != null && (
-                    <p className="mt-1 text-lg font-semibold text-civil-deep">
-                      {formatDistance(found.nearest.distance_m)} od podanego adresu
-                    </p>
-                  )}
-                  <a
-                    href={googleMapsDirectionsUrl(found.nearest, found.address)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex min-h-12 items-center gap-2 rounded-lg bg-vistula px-5 font-semibold text-white hover:bg-vistula-deep"
-                  >
-                    {NAVIGATE_LABEL}
-                    <ExternalIcon />
-                    <span className="sr-only">{NEW_TAB_HINT}</span>
-                  </a>
-                </>
-              ) : (
-                <p>
-                  <strong>Brak danych</strong> o schronach w pobliżu tego adresu.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </form>
+          <div aria-live="polite">
+            {search.state === 'not_found' && (
+              <p className="text-danger">
+                Nie znaleziono tego adresu. Wpisz ulicę z numerem, np. „Kobierzyńska 1”.
+              </p>
+            )}
+            {search.state === 'out_of_area' && (
+              <p className="font-semibold text-danger">{OUT_OF_AREA_MESSAGE}</p>
+            )}
+            {search.state === 'no_location' && (
+              <p className="text-danger">
+                Nie udało się ustalić lokalizacji. Zezwól na nią w przeglądarce albo wpisz adres.
+              </p>
+            )}
+            {search.state === 'error' && (
+              <p className="text-danger">
+                Wyszukiwanie jest chwilowo niedostępne. Spróbuj ponownie za chwilę.
+              </p>
+            )}
+            {found && (
+              <div className="rounded-lg border-2 border-civil bg-surface p-4">
+                {found.nearest ? (
+                  <>
+                    <p className="text-base text-ink-muted">Najbliższy schron</p>
+                    <p className="text-xl font-extrabold">{found.nearest.name}</p>
+                    <p>{found.nearest.address}</p>
+                    {found.nearest.distance_m != null && (
+                      <p className="mt-1 text-lg font-semibold text-civil-deep">
+                        {formatDistance(found.nearest.distance_m)} od podanego adresu
+                      </p>
+                    )}
+                    <a
+                      href={googleMapsDirectionsUrl(found.nearest, found.address)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex min-h-12 items-center gap-2 rounded-lg bg-vistula px-5 font-semibold text-white hover:bg-vistula-deep"
+                    >
+                      {NAVIGATE_LABEL}
+                      <ExternalIcon />
+                      <span className="sr-only">{NEW_TAB_HINT}</span>
+                    </a>
+                  </>
+                ) : (
+                  <p>
+                    <strong>Brak danych</strong> o schronach w pobliżu tego adresu.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </form>
 
-      <div className="flex flex-col gap-3">
-        <LeafletMap
-          warnings={warnings}
-          outages={outages}
-          shelters={shelters}
-          visible={visible}
-          address={found?.address ?? null}
-          nearest={found?.nearest ?? null}
-        />
-        <fieldset className="flex flex-wrap gap-x-6 gap-y-2">
-          <legend className="sr-only">Warstwy mapy</legend>
-          {LAYERS.map((layer) => (
-            <label key={layer.id} className="flex min-h-12 items-center gap-3">
-              <input
-                type="checkbox"
-                checked={visible[layer.id]}
-                onChange={(event) =>
-                  setVisible((current) => ({ ...current, [layer.id]: event.target.checked }))
-                }
-                className="size-6 accent-vistula"
-              />
-              <LayerSwatch id={layer.id} />
-              {layer.label}
-            </label>
-          ))}
-        </fieldset>
-        <MapTextList warnings={warnings} outages={outages} />
+        <div className="flex flex-col gap-3">
+          <LeafletMap
+            warnings={warnings}
+            outages={outages}
+            shelters={shelters}
+            visible={visible}
+            address={found?.address ?? null}
+            nearest={found?.nearest ?? null}
+          />
+          <fieldset className="flex flex-wrap gap-x-6 gap-y-2">
+            <legend className="sr-only">Warstwy mapy</legend>
+            {LAYERS.map((layer) => (
+              <label key={layer.id} className="flex min-h-12 items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={visible[layer.id]}
+                  onChange={(event) =>
+                    setVisible((current) => ({ ...current, [layer.id]: event.target.checked }))
+                  }
+                  className="size-6 accent-vistula"
+                />
+                <LayerSwatch id={layer.id} />
+                {layer.label}
+              </label>
+            ))}
+          </fieldset>
+          <MapTextList warnings={warnings} outages={outages} />
+        </div>
       </div>
     </section>
   )
@@ -273,8 +277,17 @@ function LayerSwatch({ id }: { id: LayerId }) {
     )
   }
   if (id === 'warnings') {
+    // Irregular area outline, filled with the same hatch as the map polygons
     return (
-      <span aria-hidden="true" className="size-6 rounded border-2 border-danger bg-danger-soft" />
+      <svg viewBox="0 0 32 24" className="h-6 w-8" aria-hidden="true">
+        <path
+          d="M3 9 11 3l9 3 9-1-2 10 2 6-12 1-9-3-4-5Z"
+          fill={WARNING_HATCH}
+          stroke="var(--color-danger)"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      </svg>
     )
   }
   return <span aria-hidden="true" className="size-5 rounded-full bg-caution" />

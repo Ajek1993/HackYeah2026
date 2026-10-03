@@ -83,7 +83,7 @@ export function ExchangeView({ exchange, locating = false, onRetry, retryDisable
           )}
           <SourceList sources={response.sources} />
           {response.disclaimer && (
-            <p className="border-l-4 border-vistula pl-4 text-base text-ink-muted">
+            <p className="border-l-4 border-danger pl-4 text-base font-semibold text-danger">
               {response.disclaimer}
             </p>
           )}
