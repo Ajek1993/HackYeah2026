@@ -6,12 +6,15 @@ import {
   getShelters,
   getSummary,
   getWarnings,
+  reverseGeocode,
+  type GeocodeResult,
   type PowerOutage,
   type Shelter,
   type SummaryTile,
   type Warning,
 } from '../api/data'
 import { formatDistance } from '../lib/distance'
+import { requestLocation } from '../lib/geolocation'
 import { LeafletMap, type LayerId, type MapPoint } from './map/LeafletMap'
 import { SummaryTiles } from './map/SummaryTiles'
 
@@ -29,6 +32,7 @@ type Search =
   | { state: 'not_found' }
   | { state: 'out_of_area' }
   | { state: 'error' }
+  | { state: 'no_location' }
   | { state: 'found'; address: MapPoint; nearest: Shelter | null }
 
 export function MapView() {
@@ -64,29 +68,47 @@ export function MapView() {
     }
   }, [])
 
+  async function showNearest(place: GeocodeResult, fallbackLabel: string) {
+    if (!place.found || place.lat == null || place.lon == null) {
+      setSearch({ state: 'not_found' })
+      return
+    }
+    if (!place.in_krakow) {
+      setSearch({ state: 'out_of_area' })
+      return
+    }
+    const nearest = await getNearestShelters(place.lat, place.lon, 1)
+      .then((envelope) => envelope.data?.[0] ?? null)
+      .catch(() => null)
+    setSearch({
+      state: 'found',
+      address: { lat: place.lat, lon: place.lon, label: place.display_name ?? fallbackLabel },
+      nearest,
+    })
+  }
+
   async function handleSearch(event: FormEvent) {
     event.preventDefault()
     const trimmed = query.trim()
     if (!trimmed) return
     setSearch({ state: 'loading' })
     try {
-      const place = await geocode(trimmed)
-      if (!place.found || place.lat == null || place.lon == null) {
-        setSearch({ state: 'not_found' })
-        return
-      }
-      if (!place.in_krakow) {
-        setSearch({ state: 'out_of_area' })
-        return
-      }
-      const nearest = await getNearestShelters(place.lat, place.lon, 1)
-        .then((envelope) => envelope.data?.[0] ?? null)
-        .catch(() => null)
-      setSearch({
-        state: 'found',
-        address: { lat: place.lat, lon: place.lon, label: place.display_name ?? trimmed },
-        nearest,
-      })
+      await showNearest(await geocode(trimmed), trimmed)
+    } catch {
+      setSearch({ state: 'error' })
+    }
+  }
+
+  async function handleUseLocation() {
+    setSearch({ state: 'loading' })
+    const result = await requestLocation()
+    if (result.status !== 'granted') {
+      setSearch({ state: 'no_location' })
+      return
+    }
+    const { lat, lon } = result.location
+    try {
+      await showNearest(await reverseGeocode(lat, lon), 'Twoja lokalizacja')
     } catch {
       setSearch({ state: 'error' })
     }
@@ -134,6 +156,14 @@ export function MapView() {
             {search.state === 'loading' ? 'Szukam' : 'Pokaż na mapie'}
           </button>
         </div>
+        <button
+          type="button"
+          onClick={handleUseLocation}
+          disabled={search.state === 'loading'}
+          className="min-h-12 self-start rounded-lg border-2 border-vistula bg-surface px-4 font-semibold text-vistula-deep hover:bg-vistula-soft disabled:opacity-60"
+        >
+          Użyj mojej lokalizacji
+        </button>
         <div aria-live="polite">
           {search.state === 'not_found' && (
             <p className="text-danger">
@@ -142,6 +172,11 @@ export function MapView() {
           )}
           {search.state === 'out_of_area' && (
             <p className="font-semibold text-danger">{OUT_OF_AREA_MESSAGE}</p>
+          )}
+          {search.state === 'no_location' && (
+            <p className="text-danger">
+              Nie udało się ustalić lokalizacji. Zezwól na nią w przeglądarce albo wpisz adres.
+            </p>
           )}
           {search.state === 'error' && (
             <p className="text-danger">

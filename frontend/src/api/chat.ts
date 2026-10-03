@@ -1,4 +1,5 @@
 import { config } from '../config/env'
+import type { DeviceLocation } from '../lib/geolocation'
 
 export type Sections = {
   situation: string
@@ -41,6 +42,7 @@ export class ChatError extends Error {
 export async function sendMessage(
   sessionId: string,
   message: string,
+  location: DeviceLocation | null,
   signal?: AbortSignal,
 ): Promise<ChatResponse> {
   let response: Response
@@ -48,7 +50,7 @@ export async function sendMessage(
     response = await fetch(`${config.agentUrl}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, message }),
+      body: JSON.stringify({ session_id: sessionId, message, location }),
       signal,
     })
   } catch (error) {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { DISCLAIMER } from '../config/emergency'
 import { useChat } from '../hooks/useChat'
+import type { LocationStatus } from '../lib/geolocation'
 import { ExchangeView } from './chat/ExchangeView'
 
 const QUICK_QUESTIONS = [
@@ -11,7 +12,7 @@ const QUICK_QUESTIONS = [
 ]
 
 export function ChatView() {
-  const { exchanges, pending, ask, retry, reset } = useChat()
+  const { exchanges, pending, ask, retry, reset, locationStatus } = useChat()
   const [message, setMessage] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const lastRef = useRef<HTMLDivElement>(null)
@@ -89,7 +90,12 @@ export function ChatView() {
               ref={exchange.id === last?.id ? lastRef : undefined}
               className="scroll-mt-6"
             >
-              <ExchangeView exchange={exchange} onRetry={retry} retryDisabled={pending} />
+              <ExchangeView
+                exchange={exchange}
+                locating={exchange.id === last?.id && locationStatus === 'locating'}
+                onRetry={retry}
+                retryDisabled={pending}
+              />
             </div>
           ))}
         </div>
@@ -128,6 +134,7 @@ export function ChatView() {
             {pending ? 'Czekam na odpowiedź' : 'Zapytaj'}
           </button>
         </div>
+        <LocationHint status={locationStatus} />
       </form>
 
       {!started && (
@@ -135,4 +142,18 @@ export function ChatView() {
       )}
     </section>
   )
+}
+
+const LOCATION_HINT: Partial<Record<LocationStatus, string>> = {
+  unknown:
+    'Przy pierwszym pytaniu przeglądarka zapyta o lokalizację. Jeśli nie podasz adresu, sprawdzę Twoją okolicę.',
+  granted: 'Używam Twojej lokalizacji, gdy w pytaniu nie ma adresu.',
+  denied: 'Bez dostępu do lokalizacji. Podawaj ulicę albo osiedle w pytaniu.',
+  unavailable: 'Nie udało się ustalić lokalizacji. Podawaj ulicę albo osiedle w pytaniu.',
+}
+
+function LocationHint({ status }: { status: LocationStatus }) {
+  const text = LOCATION_HINT[status]
+  if (!text) return null
+  return <p className="text-base text-ink-muted">{text}</p>
 }

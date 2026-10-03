@@ -12,11 +12,12 @@ const ERROR_TEXT = {
 
 type Props = {
   exchange: Exchange
+  locating?: boolean
   onRetry: (id: number) => void
   retryDisabled: boolean
 }
 
-export function ExchangeView({ exchange, onRetry, retryDisabled }: Props) {
+export function ExchangeView({ exchange, locating = false, onRetry, retryDisabled }: Props) {
   const { question, status, response, error } = exchange
   // Keyword fallback shows the banner at once, without waiting for (or despite failure of) the agent.
   const emergency = Boolean(response?.emergency) || looksLikeEmergency(question)
@@ -41,7 +42,11 @@ export function ExchangeView({ exchange, onRetry, retryDisabled }: Props) {
               />
             ))}
           </span>
-          <p>Sprawdzam ostrzeżenia, stany wód i poradnik. To może potrwać do pół minuty.</p>
+          <p>
+            {locating
+              ? 'Czekam na zgodę na lokalizację. Dzięki niej sprawdzę Twoją okolicę bez podawania adresu.'
+              : 'Sprawdzam ostrzeżenia, stany wód i poradnik. To może potrwać do pół minuty.'}
+          </p>
         </div>
       )}
 

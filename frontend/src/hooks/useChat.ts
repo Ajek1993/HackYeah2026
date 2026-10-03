@@ -6,6 +6,7 @@ import {
   type ChatErrorKind,
   type ChatResponse,
 } from '../api/chat'
+import { requestLocation, type DeviceLocation, type LocationStatus } from '../lib/geolocation'
 import { newSessionId } from '../lib/session'
 
 export type Exchange = {
@@ -21,6 +22,10 @@ export function useChat() {
   const sessionId = useRef(newSessionId())
   const nextId = useRef(1)
   const controller = useRef<AbortController | null>(null)
+  // Device location lives only in page memory and is asked for once, with the first question.
+  const location = useRef<DeviceLocation | null>(null)
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('unknown')
+  const locationAsked = useRef(false)
 
   useEffect(() => () => controller.current?.abort(), [])
 
@@ -30,8 +35,22 @@ export function useChat() {
     const update = (patch: Partial<Exchange>) =>
       setExchanges((list) => list.map((item) => (item.id === id ? { ...item, ...patch } : item)))
 
+    if (!locationAsked.current) {
+      locationAsked.current = true
+      setLocationStatus('locating')
+      const result = await requestLocation()
+      if (result.status === 'granted') location.current = result.location
+      setLocationStatus(result.status)
+      if (abort.signal.aborted) return
+    }
+
     try {
-      const response = await sendMessage(sessionId.current, question, abort.signal)
+      const response = await sendMessage(
+        sessionId.current,
+        question,
+        location.current,
+        abort.signal,
+      )
       update({ status: 'done', response, error: undefined })
     } catch (error) {
       if (abort.signal.aborted) return
@@ -70,5 +89,5 @@ export function useChat() {
     setExchanges([])
   }, [])
 
-  return { exchanges, pending, ask, retry, reset }
+  return { exchanges, pending, ask, retry, reset, locationStatus }
 }
