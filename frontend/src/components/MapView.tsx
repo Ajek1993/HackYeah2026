@@ -23,7 +23,7 @@ import { WARNING_HATCH } from './map/warningHatch'
 const OUT_OF_AREA_MESSAGE = 'KryzIO działa na razie tylko na terenie Krakowa'
 
 const LAYERS: { id: LayerId; label: string }[] = [
-  { id: 'shelters', label: 'Schrony i miejsca ukrycia' },
+  { id: 'shelters', label: 'Schrony i bezpieczne miejsca' },
   { id: 'warnings', label: 'Obszary ostrzeżeń' },
   { id: 'power', label: 'Wyłączenia prądu' },
 ]
@@ -44,7 +44,7 @@ export function MapView() {
   const [outages, setOutages] = useState<PowerOutage[]>([])
   const [shelters, setShelters] = useState<Shelter[]>([])
   const [visible, setVisible] = useState<Record<LayerId, boolean>>({
-    shelters: true,
+    shelters: false,
     warnings: true,
     power: true,
   })
