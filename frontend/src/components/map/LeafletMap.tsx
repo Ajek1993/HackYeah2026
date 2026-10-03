@@ -179,12 +179,14 @@ export function LeafletMap({ warnings, outages, shelters, visible, address, near
     instance.fitBounds(L.latLngBounds(points), { padding: [48, 48], maxZoom: 16 })
   }, [address, nearest])
 
+  // Leaflet panes use z-index 400-1000; `isolate` keeps them under the sticky
+  // emergency bar and simulation banner
   return (
     <div
       ref={container}
       role="region"
       aria-label="Mapa Krakowa z zagrożeniami i schronami"
-      className="h-[60vh] min-h-80 w-full overflow-hidden rounded-xl border border-line"
+      className="isolate h-[60vh] min-h-80 w-full overflow-hidden rounded-xl border border-line"
     />
   )
 }
