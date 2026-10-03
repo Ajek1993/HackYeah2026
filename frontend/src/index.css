@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Atkinson Hyperlegible Next', 'Segoe UI', system-ui, sans-serif;
+
+  --color-paper: #f3f6f8;
+  --color-surface: #ffffff;
+  --color-ink: #13212c;
+  --color-ink-muted: #45525c;
+  --color-line: #c9d3da;
+
+  --color-vistula: #1d4e89;
+  --color-vistula-deep: #143a68;
+  --color-vistula-soft: #e3ecf6;
+
+  --color-civil: #c2410c;
+  --color-civil-deep: #9a3412;
+
+  --color-ok: #2f7d4f;
+  --color-caution: #8a5a00;
+  --color-caution-soft: #fff4d6;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+}
+
+@layer base {
+  html {
+    /* 18px base for senior-friendly reading (PRD, story 8) */
+    font-size: 112.5%;
+  }
+
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+    line-height: 1.55;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-vistula);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
