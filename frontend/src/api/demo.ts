@@ -33,7 +33,7 @@ async function request(path: string, method: 'GET' | 'POST'): Promise<DemoStatus
   return (await response.json()) as DemoStatus
 }
 
-export const getActiveScenario = () => request('/demo/active', 'GET')
+export const getActiveScenario = () => request('demo/active', 'GET')
 export const activateScenario = (id: string) =>
-  request(`/demo/activate/${encodeURIComponent(id)}`, 'POST')
-export const deactivateScenario = () => request('/demo/deactivate', 'POST')
+  request(`demo/activate/${encodeURIComponent(id)}`, 'POST')
+export const deactivateScenario = () => request('demo/deactivate', 'POST')

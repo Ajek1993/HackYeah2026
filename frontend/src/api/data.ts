@@ -90,12 +90,12 @@ async function getJson<T>(path: string, params?: Record<string, string | number>
   return (await response.json()) as T
 }
 
-export const getSummary = () => getJson<Summary>('/summary')
-export const getShelters = () => getJson<Envelope<Shelter[]>>('/shelters')
-export const getWarnings = () => getJson<Envelope<Warning[]>>('/warnings')
-export const getPowerOutages = () => getJson<Envelope<PowerOutage[]>>('/power-outages')
-export const geocode = (query: string) => getJson<GeocodeResult>('/geocode', { q: query })
+export const getSummary = () => getJson<Summary>('summary')
+export const getShelters = () => getJson<Envelope<Shelter[]>>('shelters')
+export const getWarnings = () => getJson<Envelope<Warning[]>>('warnings')
+export const getPowerOutages = () => getJson<Envelope<PowerOutage[]>>('power-outages')
+export const geocode = (query: string) => getJson<GeocodeResult>('geocode', { q: query })
 export const reverseGeocode = (lat: number, lon: number) =>
-  getJson<GeocodeResult>('/reverse', { lat, lon })
+  getJson<GeocodeResult>('reverse', { lat, lon })
 export const getNearestShelters = (lat: number, lon: number, limit = 1) =>
-  getJson<Envelope<Shelter[]>>('/shelters/nearest', { lat, lon, limit })
+  getJson<Envelope<Shelter[]>>('shelters/nearest', { lat, lon, limit })
