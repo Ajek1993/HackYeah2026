@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { getTabs } from './config/tabs'
 
@@ -47,6 +47,46 @@ describe('Page structure', () => {
     )
     expect(screen.getByRole('tab', { name: 'Mapa' })).not.toHaveAttribute('aria-controls')
     expect(document.getElementById('panel-chat')).toHaveAttribute('role', 'tabpanel')
+  })
+})
+
+describe('Chat across tabs', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps the conversation after a visit to the map', async () => {
+    const answer = {
+      session_id: 'ignored',
+      answer: 'Brak ostrzeżeń dla tej okolicy.',
+      sections: null,
+      sources: [],
+      emergency: false,
+      out_of_area: false,
+      off_topic: false,
+      is_simulated: false,
+      disclaimer: null,
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        init?.method === 'POST'
+          ? new Response(JSON.stringify(answer), { status: 200 })
+          : new Response('{}', { status: 503 }),
+      ),
+    )
+    render(<App demoMode={false} />)
+
+    await userEvent.type(screen.getByRole('textbox'), 'Czy grozi zalanie?')
+    await userEvent.click(screen.getByRole('button', { name: 'Zapytaj' }))
+    expect(await screen.findByText('Brak ostrzeżeń dla tej okolicy.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Mapa' }))
+    expect(screen.queryByText('Brak ostrzeżeń dla tej okolicy.')).not.toBeVisible()
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Zapytaj' }))
+    expect(screen.getByText('Brak ostrzeżeń dla tej okolicy.')).toBeVisible()
+    expect(screen.getByText('Czy grozi zalanie?')).toBeVisible()
   })
 })
 

@@ -85,6 +85,7 @@ def test_answer_without_tools_has_contract_shape(make_client):
         "answer",
         "sections",
         "sources",
+        "shelters",
         "emergency",
         "out_of_area",
         "off_topic",
@@ -121,6 +122,45 @@ def test_tool_loop_executes_calls_and_returns_sources(make_client):
         }
     ]
     assert body["is_simulated"] is False
+
+
+def test_nearest_shelters_are_returned_for_directions(make_client):
+    shelter = {
+        "id": "s-1",
+        "name": "Schron testowy",
+        "address": ADDRESS,
+        "lat": 50.05,
+        "lon": 19.94,
+        "capacity": None,
+        "type": "shelter",
+        "distance_m": 420.0,
+    }
+    llm = FakeLLM(
+        llm_message(tool_calls=[tool_call("find_nearest_shelter", {"lat": 50.0, "lon": 19.9})]),
+        llm_message(final_json(answer="Najbliższy schron jest 420 m od Ciebie")),
+    )
+    payload = {"source": "Schrony", "data": [shelter, {"name": "bez współrzędnych"}]}
+    tools = FakeTools(
+        {"find_nearest_shelter": ToolResult(content=json.dumps(payload), payload=payload)}
+    )
+
+    body = post(make_client(llm, tools), "Gdzie jest najbliższy schron?").json()
+
+    assert body["shelters"] == [
+        {
+            "name": "Schron testowy",
+            "address": ADDRESS,
+            "lat": 50.05,
+            "lon": 19.94,
+            "distance_m": 420.0,
+        }
+    ]
+
+
+def test_answer_without_shelter_tool_has_no_shelters(make_client):
+    body = post(make_client(FakeLLM(llm_message(final_json()))), "Pytanie").json()
+
+    assert body["shelters"] == []
 
 
 def test_repeated_source_is_listed_once(make_client):

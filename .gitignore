@@ -1,8 +1,6 @@
 # Environment / secrets
 .env
 .env.*
-!.env.example
-!.env.prod.example
 
 # Production / VPS
 /docker-compose.prod.yml

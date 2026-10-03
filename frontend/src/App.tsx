@@ -54,11 +54,20 @@ export default function App({ demoMode = config.demoMode }: Props) {
         tabIndex={-1}
         className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 lg:py-10"
       >
-        <div id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`}>
-          {active === 'chat' && <ChatView key={dataKey} quickQuestions={scenario?.questions} />}
-          {active === 'map' && <MapView key={dataKey} />}
-          {active === 'demo' && demoMode && <DemoView demo={demo} onOpenTab={openTab} />}
+        {/* Chat stays mounted while hidden, so the conversation survives a visit to the map */}
+        <div id="panel-chat" role="tabpanel" aria-labelledby="tab-chat" hidden={active !== 'chat'}>
+          <ChatView key={dataKey} quickQuestions={scenario?.questions} />
         </div>
+        {active === 'map' && (
+          <div id="panel-map" role="tabpanel" aria-labelledby="tab-map">
+            <MapView key={dataKey} />
+          </div>
+        )}
+        {active === 'demo' && demoMode && (
+          <div id="panel-demo" role="tabpanel" aria-labelledby="tab-demo">
+            <DemoView demo={demo} onOpenTab={openTab} />
+          </div>
+        )}
       </main>
 
       <EmergencyBar />

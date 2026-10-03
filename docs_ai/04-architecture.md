@@ -17,7 +17,7 @@
 | Odświeżanie | Zadanie w tle w `api`; Airly co 2h (rate limit), pozostałe źródła częściej | demo nie zależy od dostępności cudzych stron |
 | Geokodowanie | Nominatim (OSM), walidacja „czy adres w Krakowie” | darmowe; realizuje US-01 |
 | Demo | Flaga `DEMO_MODE` — `api` zwraca symulowane dane scenariusza (powódź / brak prądu / atak bombowy); front pokazuje zakładkę Demo tylko przy włączonej fladze | ten sam kod agenta w obu trybach; Demo nie trafia do docelowej aplikacji |
-| Sekrety | `.env` (w `.gitignore`), w repo `.env.example` | repo publiczne |
+| Sekrety | `.env` (w `.gitignore`), minimalny `.env` opisany w README | repo publiczne |
 | Testy | `pytest` (api, agent), `vitest` (frontend) | |
 | Makefile | cele m.in. `up`, `down`, `test`, `test-api`, `test-agent`, `test-frontend`, `lint` | wymóg autora |
 | README | opis projektu, uruchomienie, architektura, źródła danych, ujawnienie użycia AI i zewnętrznych API (wymóg HackYeah) | |
