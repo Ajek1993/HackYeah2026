@@ -138,7 +138,7 @@
 - Uruchomienie, architektura, źródła danych z licencjami, ujawnienie AI/API/danych, zespół
 - **Gotowe gdy:** nowa osoba uruchamia projekt z README przez `make up`
 
-### T26 — Przegląd dostępności i bezpieczeństwa · `review` · [A]
+### T26 — Przegląd dostępności i bezpieczeństwa · `done` · [A]
 - Skill `wcag_audit` (18px, kontrast AA, 360px); agent `security-auditor` (brak sekretów, brak logowania rozmów)
 - **Gotowe gdy:** brak krytycznych uwag
 
@@ -209,6 +209,7 @@
 - Frontend: font hostowany lokalnie (`@fontsource/atkinson-hyperlegible-next`, bez Google Fonts), CSP jako `<meta>` w buildzie (`csp.ts` z testami), linki źródeł tylko `https`, `session_id` z odpowiedzi agenta, komunikat przy 429
 - Weryfikacja: pytest api 197/197, agent 109/109, vitest 59/59, `make lint` OK, build z CSP; na żywym GLM: nowe ID sesji, kontekst w drugim pytaniu, zmyślone ID zastąpione, najbliższy schron 145 m (dokładna lokalizacja), emergency z krokami z poradnika; limity 429 działają; brak adresów i współrzędnych w logach
 - Infrastruktura z audytu przeniesiona do T23 / T24 (decyzja autora)
+- Review autora: zaakceptowane — T26 `done`
 
 ### Odstępstwa
 - Lint frontendu: `oxlint` (domyślny w szablonie Vite) zamiast `eslint`
