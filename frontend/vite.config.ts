@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
       host: true,
       port: 5173,
       // File events do not reach the container through a Windows bind mount; poll instead.
+      allowedHosts: ['kryzio.goveris.pl'],
       watch:
         process.env.VITE_USE_POLLING === 'true' ? { usePolling: true, interval: 300 } : undefined,
     },
