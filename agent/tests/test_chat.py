@@ -320,6 +320,21 @@ def test_brace_in_prose_before_json_is_skipped(make_client):
     assert post(make_client(llm), "Pytanie").json()["answer"] == "Z JSON"
 
 
+def test_unescaped_quote_inside_string_is_repaired(make_client):
+    content = (
+        '{"answer": "Ostrzeżenie: „Wezbranie" – Dębniki.\\n\\nDzwoń 112.", '
+        '"sections": {"situation": "Stan „alarmowy" na Wiśle", '
+        '"before": [], "during": [], "after": []}, '
+        '"emergency": false, "out_of_area": false, "off_topic": false}'
+    )
+    llm = FakeLLM(llm_message(content))
+
+    body = post(make_client(llm), "Pytanie").json()
+
+    assert body["answer"] == 'Ostrzeżenie: „Wezbranie" – Dębniki.\n\nDzwoń 112.'
+    assert body["sections"]["situation"] == 'Stan „alarmowy" na Wiśle'
+
+
 def test_invalid_sections_are_dropped(make_client):
     llm = FakeLLM(llm_message(final_json(sections={"before": "not a list"})))
 

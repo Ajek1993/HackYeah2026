@@ -90,6 +90,43 @@ def _assistant_message(message: Any) -> dict[str, Any]:
 RESPONSE_KEYS = {"answer", "sections", "emergency", "out_of_area", "off_topic"}
 
 
+def _escape_stray_quotes(text: str) -> str:
+    """Escape quotes inside JSON strings that the model left unescaped.
+
+    Polish quotations („...") often end with a plain `"`, which closes the string
+    early. A quote counts as the end of a string only when the next non-space
+    character can follow a string in JSON; any other quote is escaped.
+    """
+    out: list[str] = []
+    in_string = escaped = False
+    for i, char in enumerate(text):
+        if in_string and escaped:
+            escaped = False
+        elif in_string and char == "\\":
+            escaped = True
+        elif char == '"':
+            if in_string:
+                rest = text[i + 1 :].lstrip()
+                if rest and rest[0] not in ",:}]":
+                    out.append('\\"')
+                    continue
+            in_string = not in_string
+        out.append(char)
+    return "".join(out)
+
+
+def _decode_object(text: str, index: int) -> Any:
+    decoder = json.JSONDecoder()
+    try:
+        return decoder.raw_decode(text, index)[0]
+    except json.JSONDecodeError:
+        pass
+    try:
+        return decoder.raw_decode(_escape_stray_quotes(text[index:]))[0]
+    except json.JSONDecodeError:
+        return None
+
+
 def _parse_final(content: str | None) -> dict[str, Any]:
     """Extract the JSON object the prompt asks for; fall back to plain text.
 
@@ -98,13 +135,9 @@ def _parse_final(content: str | None) -> dict[str, Any]:
     supplying sections and flags, so raw JSON never reaches the user.
     """
     text = (content or "").strip()
-    decoder = json.JSONDecoder()
     index = text.find("{")
     while index != -1:
-        try:
-            parsed, _ = decoder.raw_decode(text, index)
-        except json.JSONDecodeError:
-            parsed = None
+        parsed = _decode_object(text, index)
         if isinstance(parsed, dict) and RESPONSE_KEYS & parsed.keys():
             if isinstance(parsed.get("answer"), str):
                 return parsed

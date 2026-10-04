@@ -114,6 +114,7 @@ After you have finished calling tools, reply with a single JSON object and nothi
   "off_topic": false
 }}
 - `sections` is null for clarifying questions, off-topic and out-of-area answers.
+- The JSON must be valid: escape every `"` inside a string as `\\"`, or quote with „…” instead.
 """
 
 
